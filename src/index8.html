@@ -287,9 +287,14 @@
                     connStateLabel.text("不在线");
                     return;
                 }
-                else if (data.statusCode == "9") {
+                else if (data.statusCode == "4") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("太频繁");
+                    return;
+                }
+                else if (data.statusCode == "5") {
+                    let connStateLabel = $("#connectState" + count);
+                    connStateLabel.text("换模式");
                     return;
                 }
                 else if (data.statusCode == "9") {
