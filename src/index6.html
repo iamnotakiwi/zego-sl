@@ -1,0 +1,361 @@
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="../src/zego/jquery-1.4.2.min.js"></script>
+    <script src="../src/zego/js.cookie.js"></script>
+    <script src="../src/zego/ZegoExpressWebRTC-2.1.0.js?"></script>
+</head>
+<body>
+<script language="javascript">
+    var appID = 1683169960;
+    var serverURL = "wss://webliveroom1683169960-api.coolxcloud.com/ws";
+
+    var zgs = new Array(8);
+    for(i = 0; i < 8; i++) {
+        zgs[i] = new ZegoExpressEngine(appID, serverURL);
+
+        zgs[i].on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+            if (state == 'DISCONNECTED') {
+                zg.logoutRoom(roomID);
+                remoteVideo.srcObject = null;
+            }
+
+
+        });
+    }
+
+</script>
+
+<script language="javascript">
+    var currentPlayingRoomIds = new Array(8);
+
+    var userID = "";
+    var token = "";
+    var roomID = "";
+    var streamId = "";
+    var userName = "";
+
+
+    var startPublish = "0";
+    var mic = "1";
+
+
+    var isLogins = ["0","0","0","0","0","0","0","0"];
+    var playas = ["1","1","1","1","1","1","1","1","1"];
+    var remoteVideos = new Array(8);
+
+
+    //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
+    //async
+
+    async function mainFun(count) {
+
+        const remoteStream = await zgs[count].startPlayingStream(streamId);
+
+        remoteVideos[count].srcObject = remoteStream;
+        remoteVideos[count].play();
+
+
+        let videoPlay = remoteVideos[count].play();
+        videoPlay.then(() => {}).catch((err) => {
+            alert("請在主播畫面上使用右鍵取消靜音"
+            );
+            remoteVideos[count].muted = true;
+            remoteVideos[count].play();
+
+        })
+
+    }
+
+    function play(count) {
+        if (playas[count] == "1") {
+            remoteVideos[count].pause();
+            playas[count] = "0";
+        } else {
+            remoteVideos[count].play();
+            playas[count] = "1";
+        }
+    }
+
+    function sountMuted(count) {
+        if (remoteVideos[count].muted) {
+            remoteVideos[count].muted = false;
+        } else {
+            remoteVideos[count].muted = true;
+        }
+    }
+
+    function getInfo(count) {
+        $.ajax({
+            url: 'http://localhost:8080/sl/getLoginInfo',
+            type: 'GET',
+            data:
+                {   hostId: hostId,
+                    clientCookies: "",
+                    mode: 2
+                },
+
+            success: function(data){
+                alert(data);
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+    }
+
+    async function startPlaying(count) {
+        if (isLogins[count] === "1") {
+            zgs[count].logoutRoom(currentPlayingRoomIds[count]);
+            isLogins[count] = "0";
+        }
+
+        var result = await zgs[count].loginRoom(roomID, token, {
+            userID,
+            userName
+        });
+
+        currentPlayingRoomIds[count] = roomID;
+        isLogins[count] = "1";
+
+        mainFun(count);
+    }
+
+    function playStream(count, mode) {
+        var hostId = document.getElementById("hostId" + count).value;
+        var cookie = document.getElementById("cookie").value;
+
+        $.ajax({
+            //url: 'http://localhost:8080/sl/getLoginInfo',
+            url: 'http://10.10.10.200:18080/sl/getLoginInfo',
+            type: 'GET',
+            data:
+                {   hostId: hostId,
+                    clientCookies: cookie,
+                    mode: mode
+                },
+
+            success: function(data){
+                //alert(data);
+
+                if (data == "") {
+                    alert("连接房间异常");
+                    return;
+                }
+                var resultSet = data.split(',');
+
+                userID = resultSet[0];
+                token = resultSet[1];
+                roomID = resultSet[2];
+
+                streamId = "myStreamHost" + roomID.substring(18);
+                userName = userID;
+
+                document.getElementById("userId" + count).value = userID;
+                document.getElementById("token" + count).value = token;
+                document.getElementById("roomId" + count).value = roomID;
+
+                startPlaying(count, mode);
+
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+    }
+
+    //zg.setDebugVerbose(false);
+
+    // zg1.on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+    //     if (state == 'CONNECTED') {
+    //         mainFun(1);
+    //     }
+    // });
+
+</script>
+
+
+<section class="banner">
+    <div class="container">
+        <section class="footer_banner" id="contact">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                <tr>
+                    <td valign="top" bgcolor="#ffffff" style="padding-bottom: 0.5em">
+                        <p>Cookies:<input type="text" id="cookie" size="60" /></p>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" bgcolor="#ffffff" style="padding-bottom: 1em">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo0" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[0] = document.querySelector('video#remoteVideo0');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId0" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId0" size="20" />Token:<input type="text" id="token0" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId0" size="30"/>
+                                <button onclick="playStream(0,'2')">播放一多</button> <button onclick="playStream(0,'')">播放一一</button> <button onclick="sountMuted(0)">静音</button> <button onclick="play(0)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo1" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[1] = document.querySelector('video#remoteVideo1');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId1" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId1" size="20" />Token:<input type="text" id="token1" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId1" size="30"/>
+                                <button onclick="playStream(1,'2')">播放一多</button> <button onclick="playStream(1,'')">播放一一</button> <button onclick="sountMuted(1)">静音</button> <button onclick="play(1)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo2" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[2] = document.querySelector('video#remoteVideo2');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId2" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId2" size="20" />Token:<input type="text" id="token2" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId2" size="30"/>
+                                <button onclick="playStream(2,'2')">播放一多</button> <button onclick="playStream(2,'')">播放一一</button> <button onclick="sountMuted(2)">静音</button> <button onclick="play(2)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo3" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[3] = document.querySelector('video#remoteVideo3');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId3" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId3" size="20" />Token:<input type="text" id="token3" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId3" size="30"/>
+                                <button onclick="playStream(3,'2')">播放一多</button> <button onclick="playStream(3,'')">播放一一</button> <button onclick="sountMuted(3)">静音</button> <button onclick="play(3)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo4" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[4] = document.querySelector('video#remoteVideo4');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId4" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId4" size="20" />Token:<input type="text" id="token4" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId4" size="30"/>
+                                <button onclick="playStream(4,'2')">播放一多</button> <button onclick="playStream(4,'')">播放一一</button> <button onclick="sountMuted(4)">静音</button> <button onclick="play(4)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo5" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[5] = document.querySelector('video#remoteVideo5');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId5" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId5" size="20" />Token:<input type="text" id="token5" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId5" size="30"/>
+                                <button onclick="playStream(5,'2')">播放一多</button> <button onclick="playStream(5,'')">播放一一</button> <button onclick="sountMuted(5)">静音</button> <button onclick="play(5)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo6" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[6] = document.querySelector('video#remoteVideo6');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId6" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId6" size="20" />Token:<input type="text" id="token6" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId6" size="30"/>
+                                <button onclick="playStream(6,'2')">播放一多</button> <button onclick="playStream(6,'')">播放一一</button> <button onclick="sountMuted(6)">静音</button> <button onclick="play(6)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                    <td valign="top" bgcolor="#ffffff">
+                        <div class="box-body">
+                            <div style="background-color: #000000;text-align: center;">
+                                <p>
+                                    <!-- onmouseover="mainFun(); this.play();" -->
+                                    <video id="remoteVideo7" autoplay playsinline style="width:640px;height:480px;"></video>
+                                    <script>
+                                        remoteVideos[7] = document.querySelector('video#remoteVideo7');
+                                    </script>
+                                </p>
+                            </div>
+                            <p>主播Id:<input type="text" id="hostId7" size="20" /></p>
+                            <p>User Id:<input type="text" id="userId7" size="20" />Token:<input type="text" id="token7" size="30"/></p>
+                            <p>
+                                Room Id:<input type="text" id="roomId7" size="30"/>
+                                <button onclick="playStream(7,'2')">播放一多</button> <button onclick="playStream(7,'')">播放一一</button> <button onclick="sountMuted(7)">静音</button> <button onclick="play(7)">暂停</button>
+                            </p>
+                        </div>
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+        </section>
+
+    </div>
+</section>
+
+
+</body>
+</html>

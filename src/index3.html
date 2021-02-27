@@ -1,0 +1,208 @@
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="../src/zego/jquery-1.4.2.min.js"></script>
+    <script src="../src/zego/ZegoExpressWebRTC-2.1.0.js?"></script>
+</head>
+<body>
+<script language="javascript">
+    var appID = 1683169960;
+    var serverURL = "wss://webliveroom1683169960-api.coolxcloud.com/ws";
+    const zg = new ZegoExpressEngine(appID, serverURL);
+</script>
+
+<script language="javascript">
+
+    var userID = "";
+    var token = "";
+    var roomID = "";
+    var streamId = "";
+    var userName = "";
+
+
+    var startPublish = "0";
+    var mic = "1";
+
+
+    var isLogin = "0";
+    var failNum = 0;
+    // zg.logoutRoom(roomID);
+
+    var playa = "1";
+
+    // remoteVideo.addEventListener('playing', (event) => {
+    //
+    //     if(gifu != "1") {
+    //         //alert("gifu");
+    //         $.get("/ajax/gifu.php?showid=119670&webhost=showlive&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webclient=showlive");
+    //
+    //         //$.get("/ajax/restGoeasy.php?nickColor=758aac&webhost=showlive&textColor=green&fontSize="+$('#fontSize').val()+"&userId=111828543&host_callid=112120136&sid=&loginid=lovesong2&nick=lovesong2&msg=已連線開始計費^^&20210217080020");
+    //
+    //
+    //         var message = '{"action":"system","public":"1","toCallid":"' + $('#tocallid').val() + '","toName":"' + $('#toname').val() + '","userId": "111828543" , "nickColor": "#4456c5", "nick": "lovesong2", "textColor": "green", "text": "已連線開始計費","fontSize":"' + $('#fontSize').val() + '"}';
+    //         sleep(1000).then(() => {
+    //
+    //             zg.sendBroadcastMessage(roomID, message);
+    //
+    //         });
+    //
+    //         showMessage("<div class='chat-box-message-system'><font size='" + $('#fontSize').val() + "' color='#e595e6'><a href=\"Javascript:toName('lovesong2','111828543','lovesong2')\"><b><u><font size='" + $('#fontSize').val() + "' color=\"#d816b6\">lovesong2</font></b></u></a><font size='" + $('#fontSize').val() + "' color='green'>已連線開始計費</font></font></div><br>");
+    //
+    //         gifu = "1";
+    //
+    //
+    //     }
+    //
+    // });
+
+
+    var gifu = "0";
+
+    //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
+    //async
+
+    async function mainFun() {
+
+        const remoteStream = await zg.startPlayingStream(streamId);
+
+        remoteVideo.srcObject = remoteStream;
+        remoteVideo.play();
+
+
+        let videoPlay = remoteVideo.play();
+        videoPlay.then(() => {}).catch((err) => {
+            alert("請在主播畫面上使用右鍵取消靜音"
+            );
+            remoteVideo.muted = true;
+            remoteVideo.play();
+
+        })
+
+    }
+
+    function play() {
+        if (playa == "1") {
+            remoteVideo.pause();
+            playa = "0";
+        } else {
+            remoteVideo.play();
+            playa = "1";
+        }
+    }
+
+    function sountMuted() {
+        if (remoteVideo.muted) {
+            remoteVideo.muted = false;
+        } else {
+            remoteVideo.muted = true;
+        }
+    }
+
+    function playStream() {
+        var previousRoom = roomID;
+        userID = document.getElementById("userId").value;
+        token = document.getElementById("token").value;
+        roomID = document.getElementById("roomId").value;
+        streamId = "myStreamHost" + roomID.substring(18);
+        userName = userID;
+
+        if (isLogin === "1") {
+            zg.logoutRoom(previousRoom);
+            isLogin = "0";
+        }
+
+        const result = zg.loginRoom(roomID, token, {
+            userID,
+            userName
+        });
+        isLogin = "1";
+
+        //mainFun();
+    }
+
+    zg.setDebugVerbose(false);
+
+
+
+    zg.on('playerStateUpdate', (result) => {
+        // alert(JSON.stringify(result));
+        }
+    );
+
+    zg.on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+        //alert(errorCode);
+        if(errorCode != "0") {
+                //alert("初始化錯誤，請重新登入");
+                // window.location.reload();
+            }
+
+        if (state == 'DISCONNECTED') {
+            // zg.logoutRoom(roomID);
+            // remoteVideo.srcObject = null;
+            // document.location.href = 'close.php?msg=抱歉，連線中斷請重新進入，謝謝!';
+        }
+
+        if (state == 'CONNECTING') {
+            // alert('与房间连接中');
+        }
+
+        if (state == 'CONNECTED') {
+
+            mainFun();
+            // alert('与房间连接');
+            // setTimeout(getStream(),5000);
+            //getStream();
+
+            if (isLogin != "1") {
+                loginMessage();
+            }
+
+        }
+    });
+</script>
+
+
+<section class="banner">
+    <div class="container">
+        <section class="footer_banner" id="contact">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                <tr>
+                    <td width="3%" class="title01" align="center" valign="top">
+                    </td>
+                    <td width="50%" valign="top" bgcolor="#ffffff">
+                        <div class="col-md-12">
+                            <div class="box box-widget">
+                                <div class="box-body">
+                                    <div style="background-color: #000000;text-align: center;">
+                                        <p>
+                                            <!-- onmouseover="mainFun(); this.play();" -->
+                                            <video id="remoteVideo" controls="true" autoplay playsinline style="width:640px;height:480px;"></video>
+                                            <script>
+                                                var remoteVideo = document.querySelector('video#remoteVideo');
+                                            </script>
+                                        </p>
+                                    </div>
+                                    <p>User Id:<input type="text" id="userId" size="35" />Token:<input type="text" id="token" size="55"/></p>
+                                    <p>Room Id:<input type="text" id="roomId" size="35"/></p>
+                                    <button onclick="playStream()">播放</button> <button onclick="sountMuted()">静音</button> <button onclick="play()">暂停</button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                    <td width="40%" valign="top" bgcolor="#ffffff">
+                    </td>
+                </tr>
+
+                </tbody>
+            </table>
+        </section>
+
+    </div>
+</section>
+
+
+</body>
+</html>

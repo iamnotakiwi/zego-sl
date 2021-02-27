@@ -1,0 +1,1423 @@
+<script>
+
+
+</script>
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="javascript/windowopen.js" language="javascript"> </script>
+    <script src="../src/zego/jquery-1.4.2.min.js"> </script>
+    <script src="/js/sweetalert.min.js?"> </script>
+    <script src="../src/zego/ZegoExpressWebRTC-2.1.0.js?"> </script>
+    <script type="text/javascript" src="/js/goeasy-1.1.1.js"> </script>
+    <script src="/main-js/adapter-latest.js"> </script>
+    <script src="/main-js/webrtc_adaptor.js"> </script>
+    <script src="/colorpicker/jscolor.js"> </script>
+    <script src="/javascript/windowopen.js" language="javascript"> </script>
+    <link href="css/singlePageTemplate.css" rel="stylesheet" type="text/css">
+    <link rel="stylesheet" href="dist/css/AdminLTE.min.css">
+    <link rel="stylesheet" href="prospect/css/shortcode/shortcodes.css">
+    <link rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+    <link rel="stylesheet" href="bootstrap/css/bootstrap.min.css">
+    <link href="live.css?20210217200020" rel="stylesheet" type="text/css">
+
+</head>
+<body>
+<script language="javascript">
+    var appID = 1683169960;
+    var serverURL = "wss://webliveroom1683169960-api.coolxcloud.com/ws";
+    const zg = new ZegoExpressEngine(appID, serverURL);
+</script>
+<script language="javascript">;
+
+var userID = "sulovesong20210219201931";
+var token = "eyJ2ZXIiOjEsImhhc2giOiI2ZjA0N2VhOWZjZjQ3NDE3NWEyZjRhYjMwZTUxZDA5YiIsIm5vbmNlIjoiNjAyZmFjZDM2ZThmZiIsImV4cGlyZWQiOjE2MTM3MzcyMzF9";
+var roomID = "showlivehost11938618482d3977e2de40"; //showlivehost11986281a457781fc90a85
+
+var userName = userID;
+var streamId = "myStreamHost" + roomID.substring(18); //81a457781fc90a85
+
+
+var startPublish = "0";
+var mic = "1";
+
+
+var isLogin = "0";
+var failNum = 0;
+// zg.logoutRoom(roomID);
+
+const result = zg.loginRoom(roomID, token, {
+    userID,
+    userName
+});
+
+zg.setDebugVerbose(false);
+
+
+
+zg.on('playerStateUpdate', (result) => {
+    // alert(JSON.stringify(result));
+});
+
+zg.on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+    //alert(errorCode);
+    if (errorCode!="0") {
+        //alert("初始化錯誤，請重新登入");
+        // window.location.reload();
+    }
+
+    if (state == 'DISCONNECTED') {
+        zg.logoutRoom(roomID);
+        remoteVideo.srcObject = null;
+        document.location.href = 'close.php?msg=抱歉，連線中斷請重新進入，謝謝!';
+    }
+
+    if (state == 'CONNECTING') {
+        // alert('与房间连接中');
+    }
+
+    if (state == 'CONNECTED') {
+
+        mainFun();
+        // alert('与房间连接');
+        // setTimeout(getStream(),5000);
+        //getStream();
+
+        if (isLogin!="1") {
+            loginMessage();
+        }
+
+    }
+});
+
+
+function loginMessage()
+{
+
+    $.get("/ajax/talk_history_xml.php?mmode=1&sid=119670&loginid=lovesong2&msg="+encodeURIComponent("(showlive)"+"進入聊天室")+"&20210217080020");
+
+    isLogin = "1";
+    //alert("2");
+    var message = '{"action":"system","public":"1","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'","userId": "111828543" , "nickColor": "#4456c5", "nick": "lovesong2", "textColor": "green", "text": "進入聊天室","fontSize":"'+$('#fontSize').val()+'"}';
+    zg.sendBroadcastMessage(roomID, message);
+
+    showMessage("<div class='chat-box-message-system'><font size='"+$('#fontSize').val()+"' color='#e595e6'><a href=\"Javascript:toName('lovesong2','111828543','lovesong2')\"><b><u><font size='"+$('#fontSize').val()+"' color=\"#d816b6\">lovesong2</font></b></u></a><font size='"+$('#fontSize').val()+"' color='green'>進入聊天室</font></font></div><br>");
+
+
+}
+
+
+//alert(roomID);
+
+
+
+</script>
+
+
+
+<section class="banner">
+    <div class="container">
+        <section class="footer_banner" id="contact">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                <tr>
+                    <td width="3%" class="title01" align="center" valign="top">主<br>播<br>端</td>
+                    <td width="58%" valign="top" bgcolor="#ffffff">
+                        <div class="col-md-12">
+
+                            <div class="box box-widget">
+                                <div class="box-header with-border">
+                                    <div class="user-block">
+<span class="username">
+<i class="fa fa-heart-o" aria-hidden="true"></i>主播：
+<spen class="title02">showlive119670 </spen>
+<i class="fa fa-envelope-o" aria-hidden="true">
+<a class="button02" href="javascript:_windowopen('msgbox_2016.php','500','360','msgbox');">&nbsp;個人簡訊(
+<span class="updateTime"></span>)</a></i></span>
+                                    </div>
+
+
+                                </div>
+
+                                <div class="box-body">
+                                    <div class="timeline-body">
+
+                                        <div style="background-color: #000000;text-align: center;">
+                                            <p>
+                                                <video id="remoteVideo" onmouseover="mainFun(); this.play();" controls="false" autoplay playsinline style="width:640px;height:480px;"></video>
+                                                <em class='em-a3' id='em-a3'>lovesong2(1613563220)</em>
+                                                <script>
+
+
+                                                    var playa = "1";
+
+                                                    //TXWebRTCAPI.on("onEvent", onEvent);
+                                                    //TXWebRTCAPI.on("onAddStream", onAddStream);
+
+                                                    var remoteVideo=document.querySelector('video#remoteVideo');
+
+                                                    remoteVideo.addEventListener('playing', (event) => {
+
+                                                        if (gifu!="1") {
+
+
+                                                            //alert("gifu");
+                                                            $.get("/ajax/gifu.php?showid=119670&webhost=showlive&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webclient=showlive");
+
+                                                            //$.get("/ajax/restGoeasy.php?nickColor=758aac&webhost=showlive&textColor=green&fontSize="+$('#fontSize').val()+"&userId=111828543&host_callid=112120136&sid=&loginid=lovesong2&nick=lovesong2&msg=已連線開始計費^^&20210217080020");
+
+
+                                                            var message = '{"action":"system","public":"1","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'","userId": "111828543" , "nickColor": "#4456c5", "nick": "lovesong2", "textColor": "green", "text": "已連線開始計費","fontSize":"'+$('#fontSize').val()+'"}';
+                                                            sleep(1000).then(() => {
+
+                                                                zg.sendBroadcastMessage(roomID, message);
+
+                                                            });
+
+                                                            showMessage("<div class='chat-box-message-system'><font size='"+$('#fontSize').val()+"' color='#e595e6'><a href=\"Javascript:toName('lovesong2','111828543','lovesong2')\"><b><u><font size='"+$('#fontSize').val()+"' color=\"#d816b6\">lovesong2</font></b></u></a><font size='"+$('#fontSize').val()+"' color='green'>已連線開始計費</font></font></div><br>");
+
+
+                                                            /*
+                                                            goEasy.publish({
+                                                            channel: "channel_host_showlive_112120136_public",
+                                                            message: '{"userId": "111828543" , "nickColor": "#758aac", "nick": "lovesong2", "textColor": "green", "text": "已連線開始計費^^","fontSize":"'+$('#fontSize').val()+'"}',
+                                                            //message: "<div class='chat-box-message-system'><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><font size='2' color=\"#FF0000\"><u><b>lovesong2</b></u></a><font size='2' color='blue'>已連線開始計費^^</font></div>",
+                                                            onSuccess:function(){
+
+                                                            },
+                                                            onFailed: function (error) {
+                                                            //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+                                                            }});    */
+
+                                                            gifu = "1";
+
+
+                                                        }
+
+                                                    });
+
+
+
+                                                    var gifu = "0";
+
+                                                    /*
+                                                    function onEvent(e){
+                                                    //if(e.type != "stream_quality")
+
+                                                    ///alert(e);
+
+
+
+                                                    console.log(`[client_demo]onEvent, e:`, e);
+                                                    var type = e.type;
+                                                    var content = e.content;
+
+                                                    //alert(content.video);
+
+                                                    if(type == "stream_quality"){
+
+                                                    if(gifu!="1"){
+
+                                                    $.get("/ajax/gifu.php?showid=119670&webhost=showlive&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webclient=showlive");
+
+                                                    goEasy.publish({
+                                                    channel: "channel_host_showlive_112120136_public",
+                                                    message: "<div class='chat-box-message-system'><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><font size='2' color=\"#FF0000\"><u><b>lovesong2</b></u></a><font size='2' color='blue'>已連線開始計費^^</font></div>",
+                                                    onSuccess:function(){
+
+                                                    },
+                                                    onFailed: function (error) {
+                                                    //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+                                                    }});
+
+                                                    gifu = "1";
+
+
+                                                    }
+                                                    }
+                                                    */
+                                                    /*if(type == "client_detect"){ //是否支持webrtc
+                                                    var isSupport = content.errcode;
+                                                    // alert(isSupport);
+                                                    if(isSupport == 0){//该浏览器支持webrtc
+
+                                                    }
+                                                    }else if(type == "session_id"){  //本次会话的sessionid，必须处理，用于反馈定位问题的唯一key。websocket断开重连会通知新的sessionid，所以可能会有多次sessionid通知。
+                                                    var sessionId = content.sessionid;
+                                                    console.log(`[client_demo]onEvent, notify session_id: ${sessionId}`);  //业务可以收集上报到业务后台或者与业务用户账号绑定，用于反馈定位问题
+                                                    }else if(type == "stream_state"){ //流状态通知
+
+                                                    var code = content.code;
+                                                    var streamUrl = content.streamurl;
+
+                                                    alert("抱歉，播放失敗 錯誤代碼:"+code);
+
+                                                    if(code == 10017){ //拉流地址不合法=
+                                                    alert("抱歉，瀏覽器不支援請更換瀏覽器在試");
+                                                    top.close();
+                                                    }
+
+                                                    if(code == 10014){ //拉流地址不合法
+                                                    console.log("[client_demo]onEvent, notify streamUrl: " + streamUrl + " invalid");
+                                                    //alert("streamUrl: " + streamUrl + " invalid");
+                                                    alert("抱歉，地址錯誤 請重新在試");
+                                                    top.close();
+                                                    }
+
+                                                    top.close();
+
+                                                    }
+                                                    }*/
+
+
+                                                    //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
+                                                    async function  mainFun()
+                                                    {
+
+                                                        const remoteStream = await zg.startPlayingStream(streamId);
+                                                        //if(navigator.userAgent.toLowerCase().indexOf('firefox') > -1){
+                                                        // alert("可能瀏覽器會預設靜音，請在視訊畫面上右鍵取消靜音");
+                                                        // remoteVideo.muted = true;
+                                                        //}
+
+                                                        remoteVideo.srcObject = remoteStream;
+                                                        remoteVideo.play();
+
+
+
+
+                                                        let videoPlay = remoteVideo.play();
+                                                        videoPlay.then(() => {
+
+                                                        }).catch((err) => {
+                                                            alert("請在主播畫面上使用右鍵取消靜音");
+                                                            remoteVideo.muted=true;
+                                                            remoteVideo.play();
+
+                                                        })
+
+                                                    }
+                                                    function play()
+                                                    {
+                                                        if (playa=="1") {
+                                                            remoteVideo.pause();
+                                                            playa = "0";
+                                                        } else {
+                                                            remoteVideo.play();
+                                                            playa = "1";
+                                                        }
+                                                    }
+
+                                                    function sountMuted()
+                                                    {
+                                                        if (remoteVideo.muted) {
+                                                            remoteVideo.muted = false;
+                                                        } else {
+                                                            remoteVideo.muted = true;
+                                                        }
+                                                    }
+
+                                                </script>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div></td>
+                    <td width="36%" valign="top" bgcolor="#ffffff">
+                        <div class="col-md-12">
+
+                            <div class="box box-widget">
+                                <div class="box-header with-border">
+                                    <div class="user-block2">
+                                        <i class="fa fa-headphones" aria-hidden="true"></i><span class="updateRefreshTime"><span>
+                                    </div>
+                                    <div class="user-block3">
+                                        <i class="fa fa-bullhorn" aria-hidden="true"></i>公告：
+
+
+                                    </div>
+
+                                    <div class="box-body">
+
+                                        <div class="direct-chat-messages" id="chat-box" style="overflow:scroll;overflow-X:hidden; ">
+
+
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+    </td>
+    <td width="3%">&nbsp;</td>
+    </tr>
+    <tr>
+        <td bgcolor="#2f9ed7" class="title01" align="center" valign="top">用<br>戶<br>端</td>
+        <td valign="top" bgcolor="#2f3035">
+
+            <div class="row">
+                <div class="col-md-6 col-xs-6">
+                    <div class="box box-solid">
+                        <div class="box-body">
+                            <div class="timeline-body">
+                                <div class="embed-responsive embed-responsive-16by92">
+
+                                    <div id="localVideoDiv" style="display: none;">
+                                        <video id="localVideo" autoplay muted playsinline style="width:100%;height:100%"></video>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-md-6 col-xs-6">
+                    <div class="box box-primary">
+                        <div class="box-body pad table-responsive">
+                            <table width="100%" border="0" cellpadding="3" cellspacing="3">
+                                <tbody>
+                                <tr>
+                                    <td>
+                                        <button type="button" class="btn btn-block btn-primary" onclick="remoteVideo.webkitRequestFullScreen();">
+                                            <i class="fa fa-expand"></i>全螢幕</button></td>
+                                    <td>
+                                        <button type="button" class="btn btn-block btn-primary" onclick="_windowopen('vote_tab.php?id=119670&name=&webhost=showlive','380','250','vote');">
+                                            <i class="fa fa-thumbs-o-up"></i>投票給美妹</button></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button type="button" id="pleaseButton" class="btn btn-block btn-primary" onClick="toPleaseWs();alert('已送出邀請 進入聊天室待主播回覆');">
+                                            <i class="fa fa-comments-o"></i>邀請主播一對一</button></td>
+                                    <td>
+                                        <button type="button" class="btn btn-block btn-primary" onClick="$('#chat-box').empty();">
+                                            <i class="fa fa-times-circle"></i>清除聊天內容</button></td>
+                                </tr>
+
+                                <tr>
+                                    <td>
+                                        <button type="button" class="btn btn-block btn-primary" onclick="top.close();">
+                                            <i class="fa fa-sign-out" aria-hidden="true"></i>退出聊天室</button></td>
+                                    <td>
+                                        <li class="buy3">
+                                            <a href="buy.php" target="_blank">
+                                                <font color="#f442fb" size="+1">立即購點</font></a></li></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button type="button" id="SendButton" onclick="sendVideoaaa();">開啟視訊</button></td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <a href="javascript:_windowopen('/givemany_scratch.php?action=send&id=119670&webhost=showlive','500','360','msgbox');"><img src="https://s.hhh-pic.com/banner_images/scratch.gif" title="刮刮樂" border="0" /></a>
+                                    </td>
+                                    <td></td>
+                                </tr>
+                                </tbody>
+                            </table>
+                            <script>document.getElementById("SendButton").style.display="none"; </script>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </td>
+        <td>
+            <table bgcolor="d9d9d9" width="100%" border="0">
+                <tbody>
+                <tr>
+                    <td>
+                        <table border="0" cellpadding="0" bgcolor="#d9d9d9">
+                            <tbody>
+                            <tr>
+                                <td>
+                                    <div class="form-group">
+
+                                        <div style="border:1px #ccc solid;width:160px;height:40px;overflow-x:hidden;overflow-y:scroll	;background-color:#FDF2F2;border-radius:5px;font-size: 14px;">
+<span class="updateOnlineusers">
+<img src="/images/loading.gif" border="0" width="15" height="15">
+</span>
+                                        </div>
+                                    </div></td>
+                                <td valign="bottom">
+                                    <label>
+                                        <select id="sec" name="sec" style="width:100px;" class="form-control select2">
+                                            <option value="1">私密對話</option>
+                                            <option value="0" selected>公開對話</option>
+                                        </select>
+                                    </label>
+                                </td>
+                                <td width="10">
+                                    <input type="hidden" name="chosen-value" id="chosen-value" value="#000000">
+                                    <button class="jscolor {valueElement:'chosen-value', onFineChange:'document.chosen-value.value=this;'}" style="width:20px;height: 20px;">
+                                        　　
+                                    </button></td>
+                                <td valign="top">
+                                    <div class="form-group">
+                                        <input type="hidden" name="fontSize" id="fontSize" value="3">
+                                        <select name="fontSizeSelect" onchange="document.getElementById('fontSize').value=$(this).val();" class="form-control select2" style="width: 90px; margin-top: 14px;">
+                                            <option selected="selected">文字大小</option>
+                                            <option value="2">小</option>
+                                            <option value="3" selected>一般</option>
+                                            <option value="4">大</option>
+                                            <option value="5">特大</option>
+                                            <option value="6">超大</option>
+                                        </select>
+                                    </div>
+                                </td>
+                                <td width="38" align="left" valign="middle">
+                                    <a href="javascript:ReverseDisplay('uniquename')"><img src="images/icen06.gif" alt="User Image" border="0"></a></td>
+                                <td valign="middle">
+                                    <ul>
+                                    </ul></td>
+                            </tr>
+                            </tbody>
+                        </table>
+                        <div class="box-footer">
+                            <div class="input-group">
+                                <input type="hidden" size="10" name="toname" id="toname" value="對象" onclick="Javascript:toName('對象','')" style="width:160px" ; disabled><input type="hidden" name="tocallid" id="tocallid" value="0"><input type="hidden" name="tologinid" id="tologinid" value="">
+                                <input type="text" name="textInput" id="textInput" onKeyDown="if (event.keyCode == 13)
+											bbtnSend();" placeholder="此處輸入訊息..." class="form-control">
+                                <input type="button" onClick="bbtnSend();" value="發言" style="width:100px;height:25px;font-size: 12px;">
+                            </div>
+                        </div>
+                        <div class="box-body no-padding">
+                            <script>
+                                async function sendGift(gift, many)
+                                {
+                                    //alert(document.getElementById('many').valu);
+                                    document.getElementById('gift').value=gift;
+                                    document.getElementById('giftid').value=gift;
+                                    //document.getElementById('many').value=many;
+                                    await toGiftWs();
+                                }
+                            </script>
+                            <input type="hidden" name="gift" id="gift" value="0">
+                            <input type="hidden" name="giftid" id="giftid" value="0">
+                            <ul class="users-list clearfix">
+
+                                <li>
+                                    <a href="#" onclick="sendGift('1','1');" class="users-list-name">
+                                        <img src="images/icenA01.gif" alt="User Image">
+                                        <span class="users-list-date">拍拍手</span>
+                                        <span class="users-list-date">1點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('5','1');" class="users-list-name">
+                                        <img src="images/icenA02.gif" alt="User Image">
+                                        <span class="users-list-date">氣球</span>
+                                        <span class="users-list-date">5點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('10','1');" class="users-list-name">
+                                        <img src="images/icenA03.gif" alt="User Image">
+                                        <span class="users-list-date">棒棒糖</span>
+                                        <span class="users-list-date">10點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('50','1');" class="users-list-name">
+                                        <img src="images/icenA04.gif" alt="User Image">
+                                        <span class="users-list-date">巧克力</span>
+                                        <span class="users-list-date">50點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('100','1');" class="users-list-name">
+                                        <img src="images/icenA05.gif" alt="User Image">
+                                        <span class="users-list-date">蛋糕</span>
+                                        <span class="users-list-date">100點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('300','1');" class="users-list-name">
+                                        <img src="images/icenA06.gif" alt="User Image">
+                                        <span class="users-list-date">玫瑰</span>
+                                        <span class="users-list-date">300點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('500','1');" class="users-list-name">
+                                        <img src="images/icenA07.gif" alt="User Image">
+                                        <span class="users-list-date">小熊</span>
+                                        <span class="users-list-date">500點</span></a>
+                                </li>
+
+                                <li>
+                                    <a href="#" onclick="sendGift('1000','1');" class="users-list-name">
+                                        <img src="images/icenA08.gif" alt="User Image">
+                                        <span class="users-list-date">天使</span>
+                                        <span class="users-list-date">1000點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('1500','1');" class="users-list-name">
+                                        <img src="images/icenA09.gif" alt="User Image">
+                                        <span class="users-list-date">愛神</span>
+                                        <span class="users-list-date">1500點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('2000','1');" class="users-list-name">
+                                        <img src="images/icenA10.gif" alt="User Image">
+                                        <span class="users-list-date">閃亮粉紅車</span>
+                                        <span class="users-list-date">2000點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('3000','1');" class="users-list-name">
+                                        <img src="images/icenA11.gif" alt="User Image">
+                                        <span class="users-list-date">戀愛公寓</span>
+                                        <span class="users-list-date">3000點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('5000','1');" class="users-list-name">
+                                        <img src="images/icenA12.gif" alt="User Image">
+                                        <span class="users-list-date">幸福島</span>
+                                        <span class="users-list-date">5000點</span></a>
+                                </li>
+                                <li>
+                                    <a href="#" onclick="sendGift('10000','1');" class="users-list-name">
+                                        <img src="images/icenA13.gif" alt="User Image">
+                                        <span class="users-list-date">金剛鑽</span>
+                                        <span class="users-list-date">10000點</span></a>
+                                </li>
+                                <li>
+                                    數量:
+                                    <select id="many" name="many" style="width:60px;">
+                                        <option value="1">1</option>
+                                        <option value="2">2</option>
+                                        <option value="3">3</option>
+                                        <option value="4">4</option>
+                                        <option value="5">5</option>
+                                        <option value="6">6</option>
+                                        <option value="7">7</option>
+                                        <option value="8">8</option>
+                                        <option value="9">9</option>
+                                        <option value="10">10</option>
+                                    </select>
+                                </li>
+                            </ul>
+
+                        </div></td>
+                </tr>
+                </tbody>
+            </table>
+        </td>
+        <td class="title01">&nbsp;</td>
+    </tr>
+    </tbody>
+    </table>
+</section>
+
+</div>
+</section>
+
+
+<script type="text/javascript">
+
+    var fps = 0;
+    var statusCode = "";
+    var sendvideoa = 0;
+    var msg = "";
+    var onmode;
+
+    var onmode = "2";
+
+
+
+    // $(document).ready(function () {
+    //     AjaxUpdateStatus();
+    //     window.setInterval(AjaxUpdateStatus, 5000);
+    // });
+    //
+    // $(document).ready(function () {
+    //     AjaxUpdateWtarMakr();
+    //     window.setInterval(AjaxUpdateWtarMakr, 3000);
+    // });
+
+    function AjaxUpdateWtarMakr()
+    {
+
+        var aaleft = Math.floor(Math.random() * 350+1);
+        var aabottom = Math.floor(Math.random() * 500+1);
+        document.getElementById("em-a3").style.left = aaleft;
+        document.getElementById("em-a3").style.bottom = aabottom;
+
+        //sleep(00).then(() => {
+        $.get("https://gy530.com/ajax/clientauth.php?act=su&sid=119670&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webhost=showlive&20210217080020", function (d) {
+
+            //alert(d);
+            if (d=="0") {
+                zg.logoutRoom(roomID);
+                remoteVideo.srcObject = null;
+                document.location.href = 'close.php?msg=抱歉，驗證失敗請重新進入!';
+            }
+
+        });
+        //});
+
+
+    }
+
+    function sleep (time)
+    {
+        return new Promise((resolve) => setTimeout(resolve, time));
+    }
+
+    function AjaxUpdateStatus()
+    {
+
+        sleep(1000).then(() => {
+            $('.updateTime').each(function () {
+                var id = $(this).parent().find('.id').text();
+                var $this = $(this);
+                $.get("/ajax/check_msgbox.php?act=su&revid=lovesong2&20210217080020", { t: "html" }, function (d) {
+                    $this.html(' <a href="javascript:_windowopen(\'msgbox_2016.php\',\'500\',\'360\',\'msgbox\');"><font id="blink">'+d+'</font></a> ');
+                });
+            });
+        });
+        //alert("AjaxUpdateStatus");
+
+        if (onmode=="1") {
+            msg = "一對一";
+        } else {
+            msg = "一對多";
+        }
+
+
+        sleep(2000).then(() => {
+            $('.updateRefreshTime').each(function () {
+                var $this = $(this);
+                //alert("/ajax/refresh_realtime_xml_mobile.php?act=su&sid=119670&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webhost=showlive&webclient=showlive&20210217080020");
+                $.get("/ajax/refresh_realtime_xml_mobile.php?act=su&sid=119670&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webhost=showlive&webclient=showlive&20210217080020", { t: "html" }, function (d) {
+                    $this.html("<!--<a href=\"#\" onclick=\"play();\"><img src=\"/images/play.png?20200413\" order=\"0\" width=\"30\" height=\"30\"></a> <a href=\"#\" onclick=\"sountMuted();\"><img src=\"/images/sound_muted_n.png?20200413\" order=\"0\" width=\"30\" height=\"30\"></a> <a href=\"#\" onclick=\"resizee();\"><img src=\"/images/resize.png?20200413001\" order=\"0\" width=\"30\" height=\"30\"></a> 　　--><font size='+1'>狀態:<font color='red'>"+msg+"</font> <font color='#6a71ff'>剩餘點數:</font><font color='red'>"+d+"</font></font>");
+                    //alert("<!--<a href=\"#\" onclick=\"play();\"><img src=\"/images/play.png?20200413\" order=\"0\" width=\"30\" height=\"30\"></a> <a href=\"#\" onclick=\"sountMuted();\"><img src=\"/images/sound_muted_n.png?20200413\" order=\"0\" width=\"30\" height=\"30\"></a> <a href=\"#\" onclick=\"resizee();\"><img src=\"/images/resize.png?20200413001\" order=\"0\" width=\"30\" height=\"30\"></a> 　　-->狀態:<font color='red'>"+msg+"</font>   　　<font color='#6a71ff'>剩餘點數:</font><font color='red'>"+d+"</font>");
+                    if (d<0) {
+                        zg.logoutRoom(roomID);
+                        remoteVideo.srcObject = null;
+                        document.location.href = 'close.php?msg=抱歉，您的點數過低!';
+                    }
+                });
+            });
+        });
+
+        sleep(3000).then(() => {
+            $('.updateOnlineusers').each(function () {
+                var $this = $(this);
+                $.get("/ajax/check_online_nickname.php?act=su&sid=119670&webhost=showlive&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webhost=showlive&20210217080020", { t: "html" }, function (d) {
+                    $this.html(''+ d +'');
+                });
+            });
+        });
+
+
+        sleep(4000).then(() => {
+            $.get("/ajax/clientauth.php?act=su&sid=119670&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webhost=showlive&20210217080020", function (d) {
+
+                //alert(d);
+                if (d=="0") {
+                    zg.logoutRoom(roomID);
+                    remoteVideo.srcObject = null;
+                    document.location.href = 'close.php?msg=抱歉，驗證失敗請重新進入!';
+                }
+
+            });
+        });
+
+
+
+
+
+
+
+        $.get("/ajax/check_onmode.php?act=su&sid=119670&loginid=lovesong2&loginpw=e5ddbc6a05282c9fc5de4d30d4395330&webhost=showlive&20210217080020", function (d) {
+
+            onmdoe = d;
+            // alert(d);
+            if (d=="1") {
+                //document.getElementById("SendButton").style.display="none";
+                //document.getElementById("localVideoDiv").style.display="";
+                document.getElementById("SendButton").style.display="";
+                //document.getElementById("SendButton").style.display="none";
+                document.getElementById("pleaseButton").style.display="none";
+                if (sendvideoa!=1) {
+                    document.getElementById("localVideoDiv").style.display="none";
+                }
+            } else {
+                document.getElementById("SendButton").style.display="none";
+                document.getElementById("pleaseButton").style.display="";
+                document.getElementById("localVideoDiv").style.display="none";
+                //$("#localVideoDiv").remove();
+            }
+
+        });
+
+
+
+        /* $('.updateNews').each(function () {
+        var $this = $(this);
+        $.get("/ajax/check_news.php?act=su&20210217080020", { t: "html" }, function (d) {
+        $this.html('<div style="padding:8px;border:1px solid #96c2f1;background:#eff7ff">'+d+'</div>');
+        });
+        });
+
+        $('.updateMsgbox').each(function () {
+        var $this = $(this);
+        $.get("/ajax/check_msgbox.php?act=su&revid=lovesong2&20210217080020", { t: "html" }, function (d) {
+        $this.html('<input type="text" size="3" name="news" value="'+ d +'" onclick="window.open(\'msgbox_2016.php\',\'msgbox2016\', \'width=500,height=500\');">');
+        });
+        });		*/
+
+
+        //}
+    }
+
+    var pushStreamID = "myStreamUsers119670";
+
+    async function SendVideo()
+    {
+    }
+
+    async function getStream()
+    {
+
+        //alert($('#audioSource').val());
+
+        const mediaStream = await zg.createStream({
+            camera: {
+                adiaoInput: $('#audioSource').val(),
+                videoInput: $('#videoSource').val(),
+                video: $('#videoSource').val() === null ? false : true,
+                audio: $('#audioSource').val() === null ? false : true,
+                videoQuality: 2,
+            },
+        });
+
+        var resulta = zg.stopPublishingStream(pushStreamID);
+        var resulta = zg.startPublishingStream(pushStreamID, mediaStream);
+        if (!resulta) {
+            //alert('推流失敗，請刷新頁面在試'+pushStreamID);
+            //window.location.reload();
+        }
+
+        localVideo.srcObject = mediaStream;
+
+        if (resulta) {
+
+
+            var message = '{"action":"system","public":"1","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'","userId": "111828543" , "nickColor": "#4456c5", "nick": "lovesong2", "textColor": "green", "text": "正在傳送視訊中","fontSize":"'+$('#fontSize').val()+'"}';
+            sleep(1000).then(() => {
+
+                zg.sendBroadcastMessage(roomID, message);
+
+            });
+
+            showMessage("<div class='chat-box-message-system'><font size='"+$('#fontSize').val()+"' color='#e595e6'><a href=\"Javascript:toName('lovesong2','111828543','lovesong2')\"><b><u><font size='"+$('#fontSize').val()+"' color=\"#d816b6\">lovesong2</font></b></u></a><font size='"+$('#fontSize').val()+"' color='green'>正在傳送視訊中</font></font></div><br>");
+            /*
+            goEasy.publish({
+            channel: "channel_host_showlive_112120136_public",
+            message: '{"userId": "111828543" , "nickColor": "#758aac", "nick": "lovesong2", "textColor": "green", "text": "正在傳送視訊中..","fontSize":"'+$('#fontSize').val()+'"}',
+            //message: "<font size='"+$('#fontSize').val()+"' color=\"#FF0000\"><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><u><b><font color=\"#c317c1\">lovesong2</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>正在傳送視訊中..</font>",
+            onSuccess:function(){
+            //alert("消息发布成功。");
+            },
+            onFailed: function (error) {
+            //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+            }
+            });		*/
+
+        }
+    }
+
+    function stopPublishing()
+    {
+
+        stop_publish_button.disabled = true;
+        start_publish_button.disabled = false;
+        var resulta = zg.stopPublishingStream(pushStreamID);
+        localVideo.srcObject = null;
+    }
+
+    function toName(toname, tocallid, tologinid)
+    {
+        document.getElementById("toname").value = toname;
+        document.getElementById("tocallid").value = tocallid;
+        document.getElementById("tologinid").value = tologinid;
+    }
+
+    function toNickname(nickname)
+    {
+        //alert(nickname_array.length);
+        for (i=0;i<=nickname_array.length;i++) {
+            //alert(nickname_array[i]+"="+nickname);
+            if (nickname_array[i]==nickname) {
+                document.getElementById("toname").value = nickname_array[i];
+                document.getElementById("tocallid").value = callid_array[i];
+                document.getElementById("tologinid").value = loginid_array[i];
+            }
+        }
+    }
+
+    $("#textInput").keypress(function(e) {
+        code = (e.keyCode ? e.keyCode : e.which);
+        if (code == 13) {
+            //targetForm是表單的ID
+            toChat();
+        }
+    });
+
+    function toGift()
+    {
+
+        if (document.getElementById('gift').value>0) {
+            if (confirm('確認送禮'+document.getElementById('gift').value+'點，數量:'+document.getElementById("many").value+' ?')) {
+                //alert("GIft");
+                document.getElementById("chatroom_2011_client").GiftFromJavaScript(document.getElementById('gift').value,document.getElementById('giftid').value,document.getElementById("many").value);
+            }
+        }
+    }
+
+    function toChat(msg, chatColor, loginid, toName, toLoginid, textsize, toCallid)
+    {
+
+        //if(fps>0){
+
+        var msg = decodeURIComponent(document.getElementById("textInput").value);
+        //msg = msg.replace(/}/g,'');
+
+        //alert(flash);
+
+        /*var x = document.getElementById("fontSize").selectedIndex;
+        alert(document.getElementsByTagName("option")[x].value);
+        */
+        /*
+        alert(document.getElementById("textInput").value+"\n"+
+        document.getElementById("chosen-value").value+"\n"+
+        "\n"+
+        document.getElementById("toname").value+"\n"+
+        document.getElementById("fontSize").value+"\n"+
+        document.getElementById("tocallid").value+"\n");
+        */
+
+        //document.getElementById("chatroom_2011_client").strReplaceFromJavaScript(msg,document.getElementById("chosen-value").value,"lovesong2",document.getElementById("toname").value,document.getElementById("toname").value,document.getElementById("fontSize").value,document.getElementById("tocallid").value,document.getElementById("sec").value);
+
+        // document.getElementById("textInput").value = '';
+
+        //document.getElementById("chatroom_2012_host_big").strReplaceFromJavaScript("123");
+        //return false;
+        //}
+        //	else{
+        //	  alert("抱歉，開始計費才發言");
+        ////			}
+    }
+
+
+    function addText(msg)
+    {
+        var msg = decodeURIComponent(msg);
+        msg = msg.replace(/\[em_([0-9]*)\]/g,'<img src="http://s.hhh-pic.com/flash/face/$1.gif" border="0" />');
+        msg = msg.replace(/{::\)}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_5.gif'>");
+        msg = msg.replace(/{::A}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_13.gif'>");
+        msg = msg.replace(/{::B}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_42.gif'>");
+        msg = msg.replace(/{::C}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_11.gif'>");
+        msg = msg.replace(/{::D}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_24.gif'>");
+        msg = msg.replace(/{::E}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_18.gif'>");
+        msg = msg.replace(/{::F}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_43.gif'>");
+        msg = msg.replace(/{::G}/g,"<img src='http://s.hhh-pic.com/flash/smile/cry_smile'>");
+        msg = msg.replace(/{::H}/g,"<img src='http://s.hhh-pic.com/flash/smile/angry_smile.gif'>");
+        msg = msg.replace(/{::I}/g,"<img src='http://s.hhh-pic.com/flash/smile/present.gif'>");
+        msg = msg.replace(/{::J}/g,"<img src='http://s.hhh-pic.com/flash/smile/thumbs_up.gif'>");
+        msg = msg.replace(/{::K}/g,"<img src='http://s.hhh-pic.com/flash/smile/on17.gif'>");
+        msg = msg.replace(/{::40}/g,"<img src='http://s.hhh-pic.com/flash/smile/me_40.gif'>");
+        msg = msg.replace(/{::41}/g,"<img src='http://s.hhh-pic.com/flash/smile/41.gif'>");
+        msg = msg.replace(/{::42}/g,"<img src='http://s.hhh-pic.com/flash/smile/42.gif'>");
+        msg = msg.replace(/{::43}/g,"<img src='http://s.hhh-pic.com/flash/smile/43.gif'>");
+        msg = msg.replace(/{::44}/g,"<img src='http://s.hhh-pic.com/flash/smile/44.gif'>");
+        msg = msg.replace(/{::45}/g,"<img src='http://s.hhh-pic.com/flash/smile/45.gif'>");
+        msg = msg.replace(/{::46}/g,"<img src='http://s.hhh-pic.com/flash/smile/46.gif'>");
+        msg = msg.replace(/{::47}/g,"<img src='http://s.hhh-pic.com/flash/smile/47.gif'>");
+        msg = msg.replace(/{::48}/g,"<img src='http://s.hhh-pic.com/flash/smile/48.gif'>");
+        msg = msg.replace(/{::49}/g,"<img src='http://s.hhh-pic.com/flash/smile/49.gif'>");
+        msg = msg.replace(/{::50}/g,"<img src='http://s.hhh-pic.com/flash/smile/50.gif'>");
+        msg = msg.replace(/{::51}/g,"<img src='http://s.hhh-pic.com/flash/smile/51.gif'>");
+        msg = msg.replace(/{::1001}/g,"<img src='http://s.hhh-pic.com/flash/smile/1001.gif'>");
+        msg = msg.replace(/{::1002}/g,"<img src='http://s.hhh-pic.com/flash/smile/1002.gif'>");
+        msg = msg.replace(/{::1003}/g,"<img src='http://s.hhh-pic.com/flash/smile/1003.gif'>");
+        msg = msg.replace(/{::1004}/g,"<img src='http://s.hhh-pic.com/flash/smile/1004.gif'>");
+        msg = msg.replace(/{::1005}/g,"<img src='http://s.hhh-pic.com/flash/smile/1005.gif'>");
+        msg = msg.replace(/{::1006}/g,"<img src='http://s.hhh-pic.com/flash/smile/1006.gif'>");
+        msg = msg.replace(/{::1007}/g,"<img src='http://s.hhh-pic.com/flash/smile/1007.gif'>");
+        msg = msg.replace(/{::1008}/g,"<img src='http://s.hhh-pic.com/flash/smile/1008.gif'>");
+        msg = msg.replace(/{::1009}/g,"<img src='http://s.hhh-pic.com/flash/smile/1009.gif'>");
+        msg = msg.replace(/{::1010}/g,"<img src='http://s.hhh-pic.com/flash/smile/1010.gif'>");
+        msg = msg.replace(/{::1011}/g,"<img src='http://s.hhh-pic.com/flash/smile/1011.gif'>");
+        msg = msg.replace(/{::1012}/g,"<img src='http://s.hhh-pic.com/flash/smile/1012.gif'>");
+        msg = msg.replace(/{::1013}/g,"<img src='http://s.hhh-pic.com/flash/smile/1013.gif'>");
+        msg = msg.replace(/{::1014}/g,"<img src='http://s.hhh-pic.com/flash/smile/1014.gif'>");
+        msg = msg.replace(/{::1015}/g,"<img src='http://s.hhh-pic.com/flash/smile/1015.gif'>");
+        msg = msg.replace(/{::1016}/g,"<img src='http://s.hhh-pic.com/flash/smile/1016.gif'>");
+        msg = msg.replace(/{::1017}/g,"<img src='http://s.hhh-pic.com/flash/smile/1017.gif'>");
+        msg = msg.replace(/{::1018}/g,"<img src='http://s.hhh-pic.com/flash/smile/1018.gif'>");
+        msg = msg.replace(/{::1019}/g,"<img src='http://s.hhh-pic.com/flash/smile/1019.gif'>");
+        msg = msg.replace(/{::1020}/g,"<img src='http://s.hhh-pic.com/flash/smile/1020.gif'>");
+        msg = msg.replace(/{::1021}/g,"<img src='http://s.hhh-pic.com/flash/smile/1021.gif'>");
+        msg = msg.replace(/{::1022}/g,"<img src='http://s.hhh-pic.com/flash/smile/1022.gif'>");
+        msg = msg.replace(/{::1023}/g,"<img src='http://s.hhh-pic.com/flash/smile/1023.gif'>");
+        msg = msg.replace(/{::1024}/g,"<img src='http://s.hhh-pic.com/flash/smile/1024.gif'>");
+        msg = msg.replace(/{::1025}/g,"<img src='http://s.hhh-pic.com/flash/smile/1025.gif'>");
+        msg = msg.replace(/{::1026}/g,"<img src='http://s.hhh-pic.com/flash/smile/1026.gif'>");
+        msg = msg.replace(/{::1027}/g,"<img src='http://s.hhh-pic.com/flash/smile/1027.gif'>");
+        msg = msg.replace(/{::1028}/g,"<img src='http://s.hhh-pic.com/flash/smile/1028.gif'>");
+        msg = msg.replace(/{::1029}/g,"<img src='http://s.hhh-pic.com/flash/smile/1029.gif'>");
+        msg = msg.replace(/{::1030}/g,"<img src='http://s.hhh-pic.com/flash/smile/1030.gif'>");
+        msg = msg.replace(/{::1031}/g,"<img src='http://s.hhh-pic.com/flash/smile/1031.gif'>");
+        msg = msg.replace(/{::1032}/g,"<img src='http://s.hhh-pic.com/flash/smile/1032.gif'>");
+        msg = msg.replace(/{::1033}/g,"<img src='http://s.hhh-pic.com/flash/smile/1033.gif'>");
+        msg = msg.replace(/{::1034}/g,"<img src='http://s.hhh-pic.com/flash/smile/1034.gif'>");
+        msg = msg.replace(/{::1035}/g,"<img src='http://s.hhh-pic.com/flash/smile/1035.gif'>");
+        msg = msg.replace(/{::1036}/g,"<img src='http://s.hhh-pic.com/flash/smile/1036.gif'>");
+        msg = msg.replace(/{::1037}/g,"<img src='http://s.hhh-pic.com/flash/smile/1037.gif'>");
+        msg = msg.replace(/{::1038}/g,"<img src='http://s.hhh-pic.com/flash/smile/1038.gif'>");
+        msg = msg.replace(/{::1039}/g,"<img src='http://s.hhh-pic.com/flash/smile/1039.gif'>");
+        msg = msg.replace(/{::1040}/g,"<img src='http://s.hhh-pic.com/flash/smile/1040.gif'>");
+        msg = msg.replace(/{::1041}/g,"<img src='http://s.hhh-pic.com/flash/smile/1041.gif'>");
+        msg = msg.replace(/{::1042}/g,"<img src='http://s.hhh-pic.com/flash/smile/1042.gif'>");
+        msg = msg.replace(/{::1043}/g,"<img src='http://s.hhh-pic.com/flash/smile/1043.gif'>");
+        msg = msg.replace(/{::1044}/g,"<img src='http://s.hhh-pic.com/flash/smile/1044.gif'>");
+        msg = msg.replace(/{::1045}/g,"<img src='http://s.hhh-pic.com/flash/smile/1045.gif'>");
+        msg = msg.replace(/:}/g,"<img src='http://s.hhh-pic.com/flash/smile/face (213).gif'>");
+        msg = msg.replace(/:\]/g,"<img src='http://s.hhh-pic.com/flash/smile/face (163).gif'>");
+        msg = msg.replace(/:\[/g,"<img src='http://s.hhh-pic.com/flash/smile/star_level3.gif'>");
+        msg = msg.replace(/:\$/g,"<img src='http://s.hhh-pic.com/flash/smile/shy.gif'>");
+        msg = msg.replace(/:\)/g,"<img src='http://s.hhh-pic.com/flash/smile/smile.gif'>");
+        msg = msg.replace(/:o/g,"<img src='http://s.hhh-pic.com/flash/smile/uplook.gif'>");
+        msg = msg.replace(/:p/g,"<img src='http://s.hhh-pic.com/flash/smile/envy.gif'>");
+        msg = msg.replace(/:\(/g,"<img src='http://s.hhh-pic.com/flash/smile/unhappy.gif'>");
+        msg = msg.replace(/\$\$/g,"<img src='http://s.hhh-pic.com/flash/smile/face (248).gif'>");
+        msg = msg.replace(/:&/g,"<img src='http://s.hhh-pic.com/flash/smile/tu17.gif'>");
+        msg = msg.replace(/:#/g,"<img src='http://s.hhh-pic.com/flash/smile/tu18.gif'>");
+        msg = msg.replace(/:{/g,"<img src='http://s.hhh-pic.com/flash/smile/blow-kiss.gif'>");
+        msg = msg.replace(/:~/g,"<img src='http://s.hhh-pic.com/flash/smile/on21.gif'>");
+        msg = msg.replace(/:_/g,"<img src='http://s.hhh-pic.com/flash/smile/onion (53).gif'>");
+        msg = msg.replace(/:-/g,"<img src='http://s.hhh-pic.com/flash/smile/flower.gif'>");
+        msg = msg.replace(/:z/g,"<img src='http://s.hhh-pic.com/flash/smile/wink.gif'>");
+        msg = msg.replace(/:\+/g,"<img src='http://s.hhh-pic.com/flash/smile/rotfl.gif'>");
+        msg = msg.replace(/{~}/g,"<img src='http://s.hhh-pic.com/flash/smile/A056.gif'>");
+        msg = msg.replace(/{#}/g,"<img src='http://s.hhh-pic.com/flash/smile/6184ceba.gif'>");
+        msg = msg.replace(/{^^}/g,"<img src='http://s.hhh-pic.com/flash/smile/A051.gif'>");
+        msg = msg.replace(/{~~}/g,"<img src='http://s.hhh-pic.com/flash/smile/E005.gif'>");
+        msg = msg.replace(/{\$}/g,"<img src='http://s.hhh-pic.com/flash/smile/233cd70a.gif'>");
+        msg = msg.replace(/{hi}/g,"<img src='http://s.hhh-pic.com/flash/smile/3473749b.gif'>");
+        msg = msg.replace(/{a}/g,"<img src='http://s.hhh-pic.com/flash/smile/angry_smile.gif'>");
+        msg = msg.replace(/{c}/g,"<img src='http://s.hhh-pic.com/flash/smile/tongue_smile.gif'>");
+        msg = msg.replace(/{b}/g,"<img src='http://s.hhh-pic.com/flash/smile/thumbs_up.gif'>");
+        msg = msg.replace(/{g}/g,"<img src='http://s.hhh-pic.com/flash/smile/present.gif'>");
+        //var regex = /<a href=\'event\:.*\'>.*<\/a>/;
+        //msg = msg.replace(regex,"");
+        //var regex = /<a href=\'event\:.*\'>/;
+        //msg = msg.replace(regex,"");
+        var regex = /size=\'14\'/;
+        msg = msg.replace(regex,"size='2'");
+        var regex = /size=\'13\'/;
+        msg = msg.replace(regex,"size='2'");
+        var regex = /size=\'15\'/;
+        msg = msg.replace(regex,"size='3'");
+        var regex = /size=\'16\'/;
+        msg = msg.replace(regex,"size='4'");
+        var regex = /size=\'17\'/;
+        msg = msg.replace(regex,"size='5'");
+
+        var div = document.getElementById('chat_txt');
+        //var now = new Date();
+        //div.innerHTML = div.innerHTML + '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size:13pt;"><tr><td width="9"><img src="image/display_chat_tab_01-1.gif" width="9" height="8"></td><td background="image/display_chat_tab_01-3.gif"><img src="image/display_chat_tab_01-3.gif" width="9" height="8"></td>    <td width="9"><img src="image/display_chat_tab_01-2.gif" width="9" height="8"></td>  </tr>  <tr>    <td><img src="image/display_chat_tab_top_bg-1.gif" width="9" height="31"></td>    <td background="image/display_chat_tab_top_bg-3.gif"><table border="0" cellpadding="0" cellspacing="0" width="100%"><td><a href="#" OnClick="passData(\'toname\',\''+nickname+'\',\'\',\'\',\'\',\'\');">'+nickname+'</td><td>'+now.getHours()+':'+now.getMinutes() +'</td></table></td>    <td><img src="image/display_chat_tab_top_bg-2.gif" width="9" height="31"></td>  </tr>  <tr>    <td><img src="image/display_chat_tab_06-1.gif" width="9" height="8"></td>    <td background="image/display_chat_tab_06-3.gif"><img src="image/display_chat_tab_06-3.gif" width="9" height="8"></td>    <td><img src="image/display_chat_tab_06-2.gif" width="9" height="8"></td>  </tr>  <tr>    <td background="image/display_chat_tab_07.gif"></td>    <td bgcolor="#FFF6D9">' + msg + '</td>    <td background="image/display_chat_tab_09.gif"></td>  </tr>  <tr>    <td><img src="image/display_chat_tab_10-.gif" width="9" height="12"></td>    <td background="image/display_chat_tab_10-3.gif"><img src="image/display_chat_tab_10-3.gif" width="12" height="12"></td>    <td><img src="image/display_chat_tab_10-2.gif" width="9" height="12"></td>  </tr></table>';
+        div.innerHTML = div.innerHTML + '' + msg + '<br>';
+        div.scrollTop = div.scrollHeight;
+        //window.location.href = "#down";
+    }
+
+    function addTextGift(msg)
+    {
+        var msg = decodeURIComponent(msg);
+        msg = msg.replace(/{::gift300}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_300.gif'>");
+        msg = msg.replace(/{::gift1}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_1.gif'>");
+        msg = msg.replace(/{::gift5}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_5.gif'>");
+        msg = msg.replace(/{::gift10}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_10.gif'>");
+        msg = msg.replace(/{::gift50}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_50.gif'>");
+        msg = msg.replace(/{::gift100}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_100.gif'>");
+        msg = msg.replace(/{::gift500}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_500.gif'>");
+        msg = msg.replace(/{::gift1000}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_1000.gif'>");
+        msg = msg.replace(/{::gift1500}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_1500.gif'>");
+        msg = msg.replace(/{::gift2000}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_2000.gif'>");
+        msg = msg.replace(/{::gift3000}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_3000.gif'>");
+        msg = msg.replace(/{::gift5000}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_5000.gif'>");
+        msg = msg.replace(/{::gift10000}/g,"<img src='http://s.hhh-pic.com/flash/gift/gift_10000.gif'>");
+        //var regex = /<a href=\'event\:.*\'>.*<\/a>/;
+        //msg = msg.replace(regex,"");
+        //var regex = /<a href=\'event\:.*\'>/;
+        //msg = msg.replace(regex,"");
+        var regex = /size=\'14\'/;
+        msg = msg.replace(regex,"size='2'");
+        var regex = /size=\'13\'/;
+        msg = msg.replace(regex,"size='2'");
+        var regex = /size=\'15\'/;
+        msg = msg.replace(regex,"size='2'");
+        var regex = /size=\'16\'/;
+        msg = msg.replace(regex,"size='2'");
+        var regex = /size=\'17\'/;
+        msg = msg.replace(regex,"size='2'");
+
+        var divg = document.getElementById('gift_txt');
+        //var now = new Date();
+        //div.innerHTML = div.innerHTML + '<table width="100%" border="0" cellspacing="0" cellpadding="0" style="font-size:13pt;"><tr><td width="9"><img src="image/display_chat_tab_01-1.gif" width="9" height="8"></td><td background="image/display_chat_tab_01-3.gif"><img src="image/display_chat_tab_01-3.gif" width="9" height="8"></td>    <td width="9"><img src="image/display_chat_tab_01-2.gif" width="9" height="8"></td>  </tr>  <tr>    <td><img src="image/display_chat_tab_top_bg-1.gif" width="9" height="31"></td>    <td background="image/display_chat_tab_top_bg-3.gif"><table border="0" cellpadding="0" cellspacing="0" width="100%"><td><a href="#" OnClick="passData(\'toname\',\''+nickname+'\',\'\',\'\',\'\',\'\');">'+nickname+'</td><td>'+now.getHours()+':'+now.getMinutes() +'</td></table></td>    <td><img src="image/display_chat_tab_top_bg-2.gif" width="9" height="31"></td>  </tr>  <tr>    <td><img src="image/display_chat_tab_06-1.gif" width="9" height="8"></td>    <td background="image/display_chat_tab_06-3.gif"><img src="image/display_chat_tab_06-3.gif" width="9" height="8"></td>    <td><img src="image/display_chat_tab_06-2.gif" width="9" height="8"></td>  </tr>  <tr>    <td background="image/display_chat_tab_07.gif"></td>    <td bgcolor="#FFF6D9">' + msg + '</td>    <td background="image/display_chat_tab_09.gif"></td>  </tr>  <tr>    <td><img src="image/display_chat_tab_10-.gif" width="9" height="12"></td>    <td background="image/display_chat_tab_10-3.gif"><img src="image/display_chat_tab_10-3.gif" width="12" height="12"></td>    <td><img src="image/display_chat_tab_10-2.gif" width="9" height="12"></td>  </tr></table>';
+        divg.innerHTML = divg.innerHTML + '' + msg + '<br>';
+        divg.scrollTop = divg.scrollHeight;
+        //window.location.href = "#down";
+    }
+
+
+    /*
+    function nowFps(thisfps){
+    fps = thisfps;
+    //alert(fps+"=2");
+    }
+
+    function nowStatusCode(Code){
+    statusCode = Code;
+    if(statusCode=="NetConnection.Connect.Closed" ||
+    statusCode=="NetConnection.Connect.Failed" ||
+    statusCode=="NetConnection.Connect.InvalidApp" ||
+    statusCode=="NetConnection.Connect.AppShutdown" ||
+    statusCode=="NetConnection.Connect.IdleTimeout"){
+    alert('抱歉!!!連線已中斷，請重新進入');
+    window.location.href="chatroom_out.php";
+    }
+    //alert(statusCode);
+    }
+    */
+
+    $(function() {
+        $('.emotion').qqFace({
+            id : 'facebox',
+            assign:'textInput',
+            path:'http://s.hhh-pic.com/flash/face/'
+        });
+        $(".sub_btn").click(function() {
+            var str = $("#textInput").val();
+            $("#show").html(replace_em(str));
+        });
+    });
+    //查看结果
+    function replace_em(str)
+    {
+        str = str.replace(/\</g,'&lt;');
+        str = str.replace(/\>/g,'&gt;');
+        str = str.replace(/\n/g,'<br/>');
+        str = str.replace(/\[em_([0-9]*)\]/g,'<img src="http://s.hhh-pic.com/flash/face/$1.gif" border="0" />');
+        return str;
+    }
+    /*
+    function resizeBig(){
+    document.getElementById("chatroom_2011_client").resizeFromJavaScript("800","600");
+    $("#chatroom_2011_client").css("width",800);
+    $("#chatroom_2011_client").css("height",753);
+    }
+    function resizeCenter(){
+    document.getElementById("chatroom_2011_client").resizeFromJavaScript("640","480");
+    $("#chatroom_2011_client").css("width",640);
+    $("#chatroom_2011_client").css("height",630);
+    }
+    function resizeSmall(){
+    document.getElementById("chatroom_2011_client").resizeFromJavaScript("320","240");
+    $("#chatroom_2011_client").css("width",320);
+    $("#chatroom_2011_client").css("height",390);
+    }
+
+    function bw(bw){
+    document.getElementById("chatroom_2011_client").BwFromJavaScript(bw);
+    }
+
+    function changeGiftid(theselect){
+    //alert(theselect.value);
+    document.getElementById("giftid").value = theselect.value;
+    }
+    function AutoResize(){
+    if(screen.width>=1280 && screen.height>=960){
+    resizeBig();
+    }
+    else if(screen.width>=1024 && screen.height>=768){
+    resizeCenter();
+    }
+    else{
+    resizeSmall();
+    }
+    }
+    function toPlease(){
+
+    // alert("PLease");
+    // document.getElementById("chatroom_2011_client").PleaseFromJavaScript("lovesong2","119670","111828543");
+
+    }*/
+</script>
+<script type="text/javascript" language="JavaScript">
+    function HideContent(d)
+    {
+        document.getElementById(d).style.display = "none";
+    }
+    function ShowContent(d)
+    {
+        document.getElementById(d).style.display = "block";
+    }
+    function ReverseDisplay(d)
+    {
+        if (document.getElementById(d).style.display == "none") {
+            document.getElementById(d).style.display = "block"; } else {
+            document.getElementById(d).style.display = "none"; }
+    }
+</script>
+<script>function smileStr(str)
+{
+    //alert(str);
+    document.getElementById("textInput").value = document.getElementById("textInput").value+str;
+    //
+    ReverseDisplay('uniquename');
+} </script>
+<script src="bootstrap/js/bootstrap.min.js"> </script>
+<div id="uniquename" style="position: fixed;display:none;z-index:500;right:10px;bottom:10px;background-color:#FFFFFF;opacity: 0.8;">
+    <img src="https://s.hhh-pic.com/flashv2011/smile/41.gif" width="40" height="40" alt="" onclick="smileStr('{::41}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/42.gif" width="40" height="40" alt="" onclick="smileStr('{::42}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/43.gif" width="40" height="40" alt="" onclick="smileStr('{::43}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/44.gif" width="40" height="40" alt="" onclick="smileStr('{::44}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/45.gif" width="40" height="40" alt="" onclick="smileStr('{::45}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/46.gif" width="40" height="40" alt="" onclick="smileStr('{::46}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/47.gif" width="40" height="40" alt="" onclick="smileStr('{::47}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/48.gif" width="40" height="40" alt="" onclick="smileStr('{::48}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/49.gif" width="40" height="40" alt="" onclick="smileStr('{::49}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/50.gif" width="40" height="40" alt="" onclick="smileStr('{::50}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/51.gif" width="40" height="40" alt="" onclick="smileStr('{::51}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/blow-kiss.gif" width="64" height="53" alt="" onclick="smileStr(':{')" />
+
+    <img src="https://s.hhh-pic.com/flashv2011/smile/face (213).gif" width="61" height="50" alt="" onclick="smileStr(':}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/face (248) (1).gif" width="52" height="47" alt="" onclick="smileStr(':]')" />
+
+    <img src="https://s.hhh-pic.com/flashv2011/smile/me_1.gif" width="40" height="40" alt="" onclick="smileStr('{::\)}')" />
+
+    <img src="https://s.hhh-pic.com/flashv2011/smile/me_43.gif" width="40" height="40" alt="" onclick="smileStr('{::F}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/me_24.gif" width="40" height="40" alt="" onclick="smileStr('{::D}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/wink.gif" width="66" height="66" alt="" onclick="smileStr(':z')" />
+
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1001.gif" width="40" height="40" alt="" onclick="smileStr('{::1001}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1002.gif" width="40" height="40" alt="" onclick="smileStr('{::1002}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1003.gif" width="40" height="40" alt="" onclick="smileStr('{::1003}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1004.gif" width="40" height="40" alt="" onclick="smileStr('{::1004}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1005.gif" width="40" height="40" alt="" onclick="smileStr('{::1005}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1006.gif" width="40" height="40" alt="" onclick="smileStr('{::1006}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1007.gif" width="40" height="40" alt="" onclick="smileStr('{::1007}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1008.gif" width="40" height="40" alt="" onclick="smileStr('{::1008}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1009.gif" width="40" height="40" alt="" onclick="smileStr('{::1009}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1010.gif" width="40" height="40" alt="" onclick="smileStr('{::1010}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1011.gif" width="40" height="40" alt="" onclick="smileStr('{::1011}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1012.gif" width="40" height="40" alt="" onclick="smileStr('{::1012}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1013.gif" width="40" height="40" alt="" onclick="smileStr('{::1013}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1014.gif" width="40" height="40" alt="" onclick="smileStr('{::1014}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1015.gif" width="40" height="40" alt="" onclick="smileStr('{::1015}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1016.gif" width="40" height="40" alt="" onclick="smileStr('{::1016}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1017.gif" width="40" height="40" alt="" onclick="smileStr('{::1017}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1018.gif" width="40" height="40" alt="" onclick="smileStr('{::1018}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1019.gif" width="40" height="40" alt="" onclick="smileStr('{::1019}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1020.gif" width="40" height="40" alt="" onclick="smileStr('{::1020}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1021.gif" width="40" height="40" alt="" onclick="smileStr('{::1021]')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1022.gif" width="40" height="40" alt="" onclick="smileStr('{::1022}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1023.gif" width="40" height="40" alt="" onclick="smileStr('{::1023}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1024.gif" width="40" height="40" alt="" onclick="smileStr('{::1024}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1025.gif" width="40" height="40" alt="" onclick="smileStr('{::1025}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1026.gif" width="40" height="40" alt="" onclick="smileStr('{::1026}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1027.gif" width="40" height="40" alt="" onclick="smileStr('{::1027}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1028.gif" width="40" height="40" alt="" onclick="smileStr('{::1028}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1029.gif" width="40" height="40" alt="" onclick="smileStr('{::1029}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1030.gif" width="40" height="40" alt="" onclick="smileStr('{::1030}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1031.gif" width="40" height="40" alt="" onclick="smileStr('{::1031}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1032.gif" width="40" height="40" alt="" onclick="smileStr('{::1032}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1033.gif" width="40" height="40" alt="" onclick="smileStr('{::1033}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1034.gif" width="40" height="40" alt="" onclick="smileStr('{::1034}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1035.gif" width="40" height="40" alt="" onclick="smileStr('{::1035}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1036.gif" width="40" height="40" alt="" onclick="smileStr('{::1036}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1037.gif" width="40" height="40" alt="" onclick="smileStr('{::1037}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1038.gif" width="40" height="40" alt="" onclick="smileStr('{::1038}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1039.gif" width="40" height="40" alt="" onclick="smileStr('{::1039}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1040.gif" width="40" height="40" alt="" onclick="smileStr('{::1040}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1041.gif" width="40" height="40" alt="" onclick="smileStr('{::1041}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1042.gif" width="40" height="40" alt="" onclick="smileStr('{::1042}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1043.gif" width="40" height="40" alt="" onclick="smileStr('{::1043}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1044.gif" width="40" height="40" alt="" onclick="smileStr('{::1044}')" />
+    <img src="https://s.hhh-pic.com/flashv2011/smile/1045.gif" width="40" height="40" alt="" onclick="smileStr('{::1045}')" /></div>
+<script>
+
+    async function sendVideoaaa()
+    {
+
+        //stop_publish_button.disabled = false;
+        //start_publish_button.disabled = true;
+
+        // SendVideoIng();
+        if (sendvideoa==0) {
+            sendvideoa = 1;
+            document.getElementById("localVideoDiv").style.display="";
+            document.getElementById("myModal").style.display = "block";
+        } else {
+            sendvideoa = 0;
+            document.getElementById("localVideoDiv").style.display="none";
+            document.getElementById("myModal").style.display = "none";
+        }
+
+
+
+        //document.getElementById("myModal").style.display = "block";
+
+
+        start();
+        //getStream();
+    }
+
+    closePopup = function() {
+        document.getElementById("myModal").style.display = "none";
+    }
+
+    window.onclick = function(event) {
+        if (event.target == modal) {
+            document.getElementById("myModal").style.display = "none";
+        }
+    }
+
+
+    //alert(document.getElementById("tocallid").value);
+    //alert($('#chosen-value').val());
+
+
+    /*
+    if(document.getElementById("sec").value=="1"){
+
+
+
+    if(document.getElementById("tocallid").value=="0" || document.getElementById("toname").value=="對象"){
+
+    goEasy.publish({
+    channel: "channel_host_showlive_112120136_public",
+    //主播#e595e6 會員#758aac
+    message: '{"userId": "111828543" , "nickColor": "#e595e6", "nick": "lovesong2", "textColor": "'+$('#chosen-value').val()+'", "text": "'+$('#textInput').val()+'","fontSize":"'+$('#fontSize').val()+'","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'"}',
+    //message: '{"userId": "111828543" , "nickColor": "#758aac", "nick": "lovesong2", "textColor": "'+$('#chosen-value').val()+'", "text": "'+$('#textInput').val()+'","fontSize":"'+$('#fontSize').val()+'"}',
+    //message: "<font size='"+$('#fontSize').val()+"' color=\"#FF0000\"><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><u><b><font color=\"#c317c1\">lovesong2</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font>",
+    onSuccess:function(){
+    $.get("/ajax/talk_history_xml.php?mmode=1&sid=119670&loginid=lovesong2&msg=[公開頻道]"+
+    encodeURIComponent($('#textInput').val())+"&20210217080020");
+    $('#textInput').val('');
+    },
+    onFailed: function (error) {
+    //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+    }
+    });
+
+
+    }
+    else{
+
+    //alert("channel_host_showlive_"+document.getElementById("tocallid").value+"_secret");
+
+    showMessage("<div class='chat-box-message-sec'><font size='"+$('#fontSize').val()+"' color=\""+$('#chosen-value').val()+"\"><a href='Javascript:toName(\'lovesong2\',\'111828543\',\'119670\')'><b><u><font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>lovesong2</font></b></u></a>對 <a href='Javascript:toName('"+$('#toname').val()+"','"+$('#tocallid').val()+"','')'><b><u><font size='"+$('#fontSize').val()+"' color=\""+$('#chosen-value').val()+"\">"+$('#toname').val()+"</font></b></u></a>一個人說 ：<font size='"+$('#fontsize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font></font></div><br>");
+    //showMessage("<div class='chat-box-message-sec'><font size='2' color=\"#e59f18\"><a href=\"Javascript:toName('lovesong2','111828543','lovesong2')\"><u><b>lovesong2</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font></div><br>");
+    //showMessage("<div class='chat-box-message-sec'><font size='"+$('#fontSize').val()+"' color=\"#FF0000\"><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><u><b>lovesong2</b></u></a> 對 <a href=\"Javascript:toName('"+document.getElementById("toname").value+"','"+document.getElementById("tocallid").value+"','')\"><u><b>"+document.getElementById("toname").value+"</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font></div><br>");
+
+
+
+    goEasy.publish({
+    channel: "channel_host_showlive_"+document.getElementById("tocallid").value+"_secret",
+    message: '{"userId": "111828543" , "nickColor": "#758aac", "nick": "lovesong2", "textColor": "'+$('#chosen-value').val()+'", "text": "'+$('#textInput').val()+'","fontSize":"'+$('#fontSize').val()+'","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'"}',
+    //message: "<font size='"+$('#fontSize').val()+"' color=\"#FF0000\"><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><u><b>lovesong2</b></u></a> 對 <a href=\"Javascript:toName('"+document.getElementById("toname").value+"','"+document.getElementById("tocallid").value+"','')\"><u><b>"+document.getElementById("toname").value+"</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font>",
+    onSuccess:function(){
+    $.get("/ajax/talk_history_xml.php?mmode=1&sid=119670&loginid=lovesong2&msg=[私密頻道]"+
+    encodeURIComponent($('#textInput').val())+"&20210217080020");
+    $('#textInput').val('');
+    },
+    onFailed: function (error) {
+    //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+    }
+    });
+
+
+    }
+
+    }
+    else{
+
+    if(document.getElementById("toname").value!="對象"){
+
+    goEasy.publish({
+    channel: "channel_host_showlive_112120136_public",
+    message: '{"userId": "111828543" , "nickColor": "#758aac", "nick": "lovesong2", "textColor": "'+$('#chosen-value').val()+'", "text": "'+$('#textInput').val()+'","fontSize":"'+$('#fontSize').val()+'","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'"}',
+    //message: "<font size='"+$('#fontSize').val()+"' color=\"#FF0000\"><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><u><b>lovesong2</b></u></a> 對 <a href=\"Javascript:toName('"+document.getElementById("toname").value+"','"+document.getElementById("tocallid").value+"','')\"><u><b>"+document.getElementById("toname").value+"</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font>",
+    onSuccess:function(){
+    $.get("/ajax/talk_history_xml.php?mmode=1&sid=119670&loginid=lovesong2&msg=[公開頻道]"+
+    encodeURIComponent($('#textInput').val())+"&20210217080020");
+    $('#textInput').val('');
+    },
+    onFailed: function (error) {
+    //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+    }
+    });
+
+
+
+    }
+    else{
+
+
+    goEasy.publish({
+    channel: "channel_host_showlive_112120136_public",
+    message: '{"userId": "111828543" , "nickColor": "#758aac", "nick": "lovesong2", "textColor": "'+$('#chosen-value').val()+'", "text": "'+$('#textInput').val()+'","fontSize":"'+$('#fontSize').val()+'","toCallid":"'+$('#tocallid').val()+'","toName":"'+$('#toname').val()+'"}',
+    //message: "<font size='"+$('#fontSize').val()+"' color=\"#FF0000\"><a href=\"Javascript:toName('lovesong2','111828543','119670')\"><u><b>lovesong2</b></u></a>：<font size='"+$('#fontSize').val()+"' color='"+$('#chosen-value').val()+"'>"+$('#textInput').val()+"</font>",
+    onSuccess:function(){
+    $.get("/ajax/talk_history_xml.php?mmode=1&sid=119670&loginid=lovesong2&msg=[公開頻道]"+
+    encodeURIComponent($('#textInput').val())+"&20210217080020");
+    $('#textInput').val('');
+    },
+    onFailed: function (error) {
+    //alert("消息发送失败，错误编码："+error.code+" 错误信息："+error.content);
+    }
+    });
+
+
+
+    }
+
+    }	*/
+
+
+
+</script>
+<!--<script src="/js/webrtc.main.users.pc.js?1613563220" async> </script>-->
+
+<div id="myModal" class="modal">
+
+    <div class="modal-content">
+<span class="close">
+<a href="Javascript:closePopup();">&times;</a></span>
+        <p>
+        <div align="left">
+            <div class="select" style="font-size:12px;">
+                音訊來源:
+                <label for="audioSource"></label>
+                <select id="audioSource"></select>
+            </div>
+            <div class="select" style="display: none;">
+                <label for="audioOutput">Audio output destination: </label>
+                <select id="audioOutput"></select>
+            </div>
+            <div class="select" style="font-size:12px;">
+                視訊來源:
+                <label for="videoSource"></label>
+                <select id="videoSource"></select>
+            </div>
+        </div></p>
+    </div>
+</div>
+</body>
+</html>
