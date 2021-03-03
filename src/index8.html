@@ -31,11 +31,9 @@
                     connStateLabel.text("已下线");
                 }
                 else {
-                    console.error("退出播放时，找不到房间号:" + roomID);
+                    console.log("退出播放时，找不到房间索引:" + roomID);
                 }
             }
-
-
         });
     }
 
@@ -57,16 +55,18 @@
     let remoteVideos = new Array(8);
     let retryTimers = new Array(8);
 
+    //监测主播状态
+    let hostStatusWatcher = new Array(8);
+
     let retryCounts = [1,1,1,1,1,1,1,1];
 
     $(document).ready(function(){
         //构建播放器（8个）
-
         let rowCookie = $("#rowCookie");
         rowCookie.append(
             "        <tr>\n" +
-            "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 1em\">\n" +
-            "                <p>Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" /></p>\n" +
+            "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
+            "                <p>Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label></p>\n" +
             "            </td>\n" +
             "        </tr>");
 
@@ -79,6 +79,9 @@
             let tag = 'video#remoteVideo' + i;
             remoteVideos[i] = document.querySelector(tag);
         }
+
+        //开始自动获取cookie
+        getCookiesCycle();
 
     });
 
@@ -151,6 +154,33 @@
         }
     }
 
+    function getCookiesCycle() {
+        getCookiesSingle();
+        setInterval(function () {
+            getCookiesSingle();
+        }, 15 * 60 * 1000); //每15分钟更新一次cookie
+    }
+
+    function getCookiesSingle() {
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/renewCookie',
+            type: 'GET',
+            success: function(data){
+                if (data != null) {
+                    document.getElementById("cookie").value = data.cookies;
+                    document.getElementById("lastUpdateTime").innerHTML = data.lastUpdatedTime;
+                }
+
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+    }
+
     //重复尝试进入房间
     function retryCycle(count) {
         $("#retryButton" + count).attr('disabled',true);
@@ -158,6 +188,14 @@
         retryTimers[count] = setInterval(function () {
             retrySingle(count);
         }, 3 * 60 * 1000);
+
+        //获取主播名称
+        getHostName(count);
+
+        //跟踪在被retry连接的主播状态
+        //监控主播状态
+        watchStatusSingle(count);
+        watchStatusCycle(count);
 
     }
 
@@ -172,6 +210,61 @@
 
     //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
     //async
+
+    //重复尝试进入房间
+    function watchStatusCycle(count) {
+        if(hostStatusWatcher[count] != null) {
+            clearInterval(hostStatusWatcher[count]); //停止原主播监控
+        }
+
+        hostStatusWatcher[count] = null; //清除原主播watcher
+        hostStatusWatcher[count] = setInterval(function () {
+            watchStatusSingle(count);
+        }, 3 * 60 * 1000); //三分钟
+
+    }
+
+    //重试内容
+    function watchStatusSingle(count) {
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/checkHostStatus',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+
+            success: function(data){
+                let statusCode = data;
+                let color;
+
+                //1-不在线 2-聊天中 3-1对多 4-一对一 5-封包
+                if (statusCode === "1") {
+                    color = '#2E4053'; //dark
+                }
+                else if (statusCode === "2") {
+                    color = '#F7DC6F'; //yellow
+                }
+                else if (statusCode === "3") {
+                    color = '#F7DC6F' //yellow
+                }
+                else if (statusCode === "4") {
+                    color = '#229954' //green
+                }
+                else if (statusCode === "5") {
+                    color = '#EC7063' //red
+                }
+
+                $("#hostName" + count).css({backgroundColor: color});
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+    }
 
     async function mainFun(count) {
 
@@ -197,6 +290,15 @@
         }
 
         //获取主播名称
+        getHostName(count);
+
+        //监控主播状态
+        watchStatusSingle(count);
+        watchStatusCycle(count);
+    }
+
+    function getHostName(count) {
+        //获取主播名称
         let hostId = document.getElementById("hostId" + count).value;
         $.ajax({
             //url: 'http://localhost:8090/sl/getHostName',
@@ -216,7 +318,6 @@
                 console.log(textStatus);
             }
         });
-
     }
 
     function play(count) {
@@ -321,7 +422,7 @@
 
             },
             error: function(xmlHttpRequest,textStatus,error){
-                alert(error);
+                console.log(error);
                 console.log(xmlHttpRequest.status);
                 console.log(textStatus);
             }
