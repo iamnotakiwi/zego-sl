@@ -187,7 +187,7 @@
         retrySingle(count);//第一次手动执行
         retryTimers[count] = setInterval(function () {
             retrySingle(count);
-        }, 3 * 60 * 1000);
+        }, 2 * 60 * 1000); //两分钟重试
 
         //获取主播名称
         getHostName(count);
@@ -204,12 +204,15 @@
         let retryStateLabel = $("#retryState" + count);
         retryStateLabel.css("color", "red");
         retryStateLabel.text("尝试" + retryCounts[count] + "进行中...");
-        playStream(count, 2); //TODO: 1对1重试
+        let status = playStream(count, 2);
+        if (status == "5") {
+            console.log("重复尝试换成一对一模式")
+            playStream(count,''); //如果重试发现模式不对，则尝试一对一
+        }
         retryCounts[count]++;
     }
 
     //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
-    //async
 
     //重复尝试进入房间
     function watchStatusCycle(count) {
@@ -220,7 +223,7 @@
         hostStatusWatcher[count] = null; //清除原主播watcher
         hostStatusWatcher[count] = setInterval(function () {
             watchStatusSingle(count);
-        }, 3 * 60 * 1000); //三分钟
+        }, 2 * 60 * 1000); //两分钟
 
     }
 
@@ -367,10 +370,13 @@
         let connStateLabel = $("#connectState" + count);
         connStateLabel.text("");
 
+        let code = '';
+
         $.ajax({
             //url: 'http://localhost:8090/sl/getLoginInfo',
             url: 'http://10.10.10.200:18090/sl/getLoginInfo',
             type: 'GET',
+            async: false,
             data:
                 {   hostId: hostId,
                     clientCookies: cookie,
@@ -381,27 +387,22 @@
                 if (data.statusCode == "1") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("忙线");
-                    return;
                 }
                 else if (data.statusCode == "2") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("不在线");
-                    return;
                 }
                 else if (data.statusCode == "4") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("太频繁");
-                    return;
                 }
                 else if (data.statusCode == "5") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("换模式");
-                    return;
                 }
                 else if (data.statusCode == "9") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("异常");
-                    return;
                 }
                 else {
                     let resultSet = data.loginInfo.split(',');
@@ -420,6 +421,8 @@
                     startPlaying(count, mode);
                 }
 
+                code = data.statusCode;
+
             },
             error: function(xmlHttpRequest,textStatus,error){
                 console.log(error);
@@ -428,6 +431,7 @@
             }
         });
 
+        return code;
 
     }
 
