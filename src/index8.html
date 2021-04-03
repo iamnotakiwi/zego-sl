@@ -204,11 +204,7 @@
         let retryStateLabel = $("#retryState" + count);
         retryStateLabel.css("color", "red");
         retryStateLabel.text("尝试" + retryCounts[count] + "进行中...");
-        let status = playStream(count, 2);
-        if (status == "5") {
-            console.log("重复尝试换成一对一模式")
-            playStream(count,''); //如果重试发现模式不对，则尝试一对一
-        }
+        playStream(count, 2);
         retryCounts[count]++;
     }
 
@@ -376,7 +372,6 @@
             //url: 'http://localhost:8090/sl/getLoginInfo',
             url: 'http://10.10.10.200:18090/sl/getLoginInfo',
             type: 'GET',
-            async: false,
             data:
                 {   hostId: hostId,
                     clientCookies: cookie,
@@ -399,6 +394,8 @@
                 else if (data.statusCode == "5") {
                     let connStateLabel = $("#connectState" + count);
                     connStateLabel.text("换模式");
+                    console.log("替换为一对一模式进入房间！")
+                    playStream(count, '');
                 }
                 else if (data.statusCode == "9") {
                     let connStateLabel = $("#connectState" + count);
@@ -421,8 +418,6 @@
                     startPlaying(count, mode);
                 }
 
-                code = data.statusCode;
-
             },
             error: function(xmlHttpRequest,textStatus,error){
                 console.log(error);
@@ -430,8 +425,6 @@
                 console.log(textStatus);
             }
         });
-
-        return code;
 
     }
 
