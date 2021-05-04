@@ -4,7 +4,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="./zego/jquery-1.4.2.min.js"></script>
-    <script src="./zego/ZegoExpressWebRTC-2.1.0.js?"></script>
+    <script src="./zego/ZegoExpressWebRTC-2.1.0.js"></script>
 </head>
 <body>
 <script language="javascript">
@@ -12,28 +12,77 @@
     let serverURL = "wss://webliveroom1683169960-api.coolxcloud.com/ws";
 
     let zgs = new Array(8);
-    for(i = 0; i < 8; i++) {
+
+    for(let i = 0; i < 8; i++) {
         zgs[i] = new ZegoExpressEngine(appID, serverURL);
 
-        zgs[i].on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
-            if (state == 'DISCONNECTED') {
+        zgs[i].on('roomUserUpdate', (roomID, updateType, userList) => {
+            console.log("房间用户变化: " );
+            userList.forEach(user => console.log(user.userID + ":" + user.userName));
+        });
 
-                let roomIndex = roomIndexByRoomId.get(roomID);
+        zgs[i].on('roomOnlineUserCountUpdate', (roomID,count) => {
+            console.log("房间人数变化: " + count);
+        });
 
-                if(roomIndex != null) {
-                    zgs[roomIndex].logoutRoom(roomID);
-                    remoteVideos[roomIndex].srcObject = null;
-                    roomIndexByRoomId.delete(roomID); //删除map中已完成播放的房间号
-
-                    //标记已下线
-                    let connStateLabel = $("#connectState" + roomIndex);
-                    connStateLabel.css("color", "red");
-                    connStateLabel.text("已下线");
+        zgs[i].on('IMRecvBroadcastMessage', (roomID, ZegoMessageInfo) => {
+            let txtJson = JSON.parse(ZegoMessageInfo[0].message,function(key, value) {
+                 if (typeof value === 'string') {
+                     return value.trim();
+                 }
+                 return value;
+             });
+            if (!txtJson.action) {
+                let talkHistory = document.getElementById("chat" + i).value;
+                let newMessage = txtJson.nick + ":" + txtJson.text;
+                let combineMessage = (talkHistory + " " + newMessage).trim();
+                if (combineMessage.length > 55) {
+                    document.getElementById("chat" + i).value = newMessage;
                 }
                 else {
-                    console.log("退出播放时，找不到房间索引:" + roomID);
+                    document.getElementById("chat" + i).value = combineMessage;
                 }
             }
+            else if (txtJson.action=="system") {
+
+            }
+            else if (txtJson.action=="kick") {
+                console.log("被踢出信息获取");
+            }
+            else if (txtJson.action=="please") {
+
+            }
+            else if (txtJson.action=="pleaseOK") {
+
+            }
+        });
+
+        zgs[i].on('roomStreamUpdate', (roomID, updateType, streamList, extendedData) => {
+            // if(extendedData) {
+            //     zgs[0].startPlayingStream(streamId);
+            // }
+        });
+
+        zgs[i].on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+            //alert(state);
+            // if (state == 'DISCONNECTED') {
+            //
+            //     let roomIndex = roomIndexByRoomId.get(roomID);
+            //
+            //     if(roomIndex != null) {
+            //         zgs[roomIndex].logoutRoom(roomID);
+            //         remoteVideos[roomIndex].srcObject = null;
+            //         roomIndexByRoomId.delete(roomID); //删除map中已完成播放的房间号
+            //
+            //         //标记已下线
+            //         let connStateLabel = $("#connectState" + roomIndex);
+            //         connStateLabel.css("color", "red");
+            //         connStateLabel.text("已下线");
+            //     }
+            //     else {
+            //         console.log("退出播放时，找不到房间索引:" + roomID);
+            //     }
+            // }
         });
     }
 
@@ -84,6 +133,15 @@
         getCookiesCycle();
 
     });
+
+    function parseMessage(message) {
+        let txtJson = JSON.parse(message,function(key, value) {
+            if (typeof value === 'string') {
+                return value.trim();
+            }
+            return value;
+        });
+    }
 
     function buildVideoTag(startIndex, endIndex, elementToAttach) {
         // <td valign="top" bgcolor="#ffffff" style="padding-bottom: 1em">
@@ -139,7 +197,10 @@
                 "<input id=\"hostName" + i +"\" size=\"20\" disabled></input>" +
                 "</p>";
             divTag.append(hostIdInput);
-            let userIdInput = "<p>User Id:<input type=\"text\" id=\"userId" + i + "\" size=\"20\"/>Token:<input type=\"text\" id=\"token" + i + "\" size=\"30\"/></p>";
+            let chatInput = "<p><input type=\"text\" id=\"chat" + i + "\" size=\"90\"/></p>";
+            divTag.append(chatInput);
+
+            let userIdInput = "<p hidden>User Id:<input type=\"text\" id=\"userId" + i + "\" size=\"20\"/>Token:<input type=\"text\" id=\"token" + i + "\" size=\"30\"/></p>";
             divTag.append(userIdInput);
 
             let ptag2 = $("<p>");
@@ -187,7 +248,7 @@
         retrySingle(count);//第一次手动执行
         retryTimers[count] = setInterval(function () {
             retrySingle(count);
-        }, 2 * 60 * 1000); //两分钟重试
+        }, 1 * 60 * 1000); //一分钟重试
 
         //获取主播名称
         getHostName(count);
@@ -210,7 +271,7 @@
 
     //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
 
-    //重复尝试进入房间
+    //定时更新主播状态
     function watchStatusCycle(count) {
         if(hostStatusWatcher[count] != null) {
             clearInterval(hostStatusWatcher[count]); //停止原主播监控
@@ -219,7 +280,7 @@
         hostStatusWatcher[count] = null; //清除原主播watcher
         hostStatusWatcher[count] = setInterval(function () {
             watchStatusSingle(count);
-        }, 2 * 60 * 1000); //两分钟
+        }, 1 * 60 * 1000); //一分钟
 
     }
 
@@ -265,7 +326,31 @@
         });
     }
 
+    function sleep (time) {
+        return new Promise((resolve) => setTimeout(resolve, time));
+    }
+
+    function logout(count) {
+        zgs[count].logoutRoom(currentPlayingRoomIds[count]);
+    }
+
     async function mainFun(count) {
+        // var message = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId": "112121014" , "nickColor": "#4456c5", "nick": "adobe2", "textColor": "green", "text": "進入聊天室","fontSize":"3"}';
+        // zgs[count].sendBroadcastMessage(roomID, message);
+        //
+        // var message2 = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId":"112121014","nickColor":"#4456c5","nick":"adobe2","textColor":"green","text":"已連線開始計費","fontSize":"3"}';
+        // sleep(1000).then(() => {
+        //
+        //     zgs[count].sendBroadcastMessage(roomID, message2);
+        //     //(message);
+        //
+        // });
+        //
+        // sleep(5000).then(() => {
+        //     //var message3 = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId": "112121014" , "nickColor": "#4456c5", "nick": "adobe2", "textColor": "green", "text": "離開聊天室","fontSize":"3"}';
+        //     // var message3 = '{"action":"kick","public":"1","toCallid":"112121014"}';
+        //     // zgs[count].sendBroadcastMessage(roomID, message3);
+        // });
 
         const remoteStream = await zgs[count].startPlayingStream(streamId);
 
@@ -278,6 +363,9 @@
         let connStateLabel = $("#connectState" + count);
         connStateLabel.css("color", "green");
         connStateLabel.text("正常");
+
+        //清空聊天记录
+        document.getElementById("chat" + count).value = "";
 
         //如果房间播放正常，则清除重复尝试状态
         if(retryTimers[count] >= 1) {
@@ -346,6 +434,9 @@
         let result = await zgs[count].loginRoom(roomID, token, {
             userID,
             userName
+        }, {
+            userUpdate: true,
+            maxMemberCount: 0
         });
 
         currentPlayingRoomIds[count] = roomID;
