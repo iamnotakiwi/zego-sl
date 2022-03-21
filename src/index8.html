@@ -15,14 +15,18 @@
 
     for(let i = 0; i < 8; i++) {
         zgs[i] = new ZegoExpressEngine(appID, serverURL);
+        zgs[i].setDebugVerbose(false);
+        zgs[i].setLogConfig({
+            "logLevel": 'disable'
+        });
 
         zgs[i].on('roomUserUpdate', (roomID, updateType, userList) => {
             console.log("房间用户变化: " );
-            userList.forEach(user => console.log(user.userID + ":" + user.userName));
+            userList.forEach(user => console.log(updateType + " " + user.userID + ":" + user.userName));
         });
 
         zgs[i].on('roomOnlineUserCountUpdate', (roomID,count) => {
-            console.log("房间人数变化: " + count);
+            console.log(roomID + " 房间人数变化: " + count);
         });
 
         zgs[i].on('IMRecvBroadcastMessage', (roomID, ZegoMessageInfo) => {
@@ -195,6 +199,7 @@
                 "<button id=\"retryButton" + i + "\" onClick=\"retryCycle(" + i + ")\">重复尝试</button>" +
                 "<label style=\" width:120px; display: inline-block;\" id=\"retryState" + i +"\"></label>" +
                 "<input id=\"hostName" + i +"\" size=\"20\" disabled></input>" +
+                "<label style=\" width:50px; display: inline-block;\" id=\"userCount" + i +"\"></label>" +
                 "</p>";
             divTag.append(hostIdInput);
             let chatInput = "<p><input type=\"text\" id=\"chat" + i + "\" size=\"90\"/></p>";
@@ -219,7 +224,7 @@
         getCookiesSingle();
         setInterval(function () {
             getCookiesSingle();
-        }, 10 * 60 * 1000); //每10分钟更新一次cookie
+        },5 * 60 * 1000); //每10分钟更新一次cookie
     }
 
     function getCookiesSingle() {
@@ -280,7 +285,7 @@
         hostStatusWatcher[count] = null; //清除原主播watcher
         hostStatusWatcher[count] = setInterval(function () {
             watchStatusSingle(count);
-        }, 1 * 60 * 1000); //一分钟
+        }, 0.5 * 60 * 1000); //30秒
 
     }
 
@@ -319,7 +324,27 @@
                 $("#hostName" + count).css({backgroundColor: color});
             },
             error: function(xmlHttpRequest,textStatus,error){
-                alert(error);
+                //alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/checkOnlineUserCount',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+
+            success: function(data){
+                let userCount = data;
+                let userCountLabel = $("#userCount" + count);
+                userCountLabel.text(userCount);
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                //alert(error);
                 console.log(xmlHttpRequest.status);
                 console.log(textStatus);
             }
@@ -335,10 +360,10 @@
     }
 
     async function mainFun(count) {
-        // var message = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId": "112121014" , "nickColor": "#4456c5", "nick": "adobe2", "textColor": "green", "text": "進入聊天室","fontSize":"3"}';
+        // var message = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId": "112121014" , "nickColor": "#4456c5", "nick": "很痛", "textColor": "green", "text": "進入聊天室","fontSize":"3"}';
         // zgs[count].sendBroadcastMessage(roomID, message);
         //
-        // var message2 = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId":"112121014","nickColor":"#4456c5","nick":"adobe2","textColor":"green","text":"已連線開始計費","fontSize":"3"}';
+        // var message2 = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId":"112121014","nickColor":"#4456c5","nick":"很痛","textColor":"green","text":"已連線開始計費","fontSize":"3"}';
         // sleep(1000).then(() => {
         //
         //     zgs[count].sendBroadcastMessage(roomID, message2);
