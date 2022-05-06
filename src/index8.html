@@ -112,6 +112,9 @@
     let hostStatusWatcher = new Array(8);
 
     let retryCounts = [1,1,1,1,1,1,1,1];
+    let streamIds = [null,null,null,null,null,null,null,null];
+
+    let fpsWatcher = new Array(8);
 
     $(document).ready(function(){
         //构建播放器（8个）
@@ -131,6 +134,7 @@
         for(i = 0; i < 8; i++) {
             let tag = 'video#remoteVideo' + i;
             remoteVideos[i] = document.querySelector(tag);
+            remoteVideos[i].muted = true;
         }
 
         //开始自动获取cookie
@@ -200,6 +204,7 @@
                 "<label style=\" width:120px; display: inline-block;\" id=\"retryState" + i +"\"></label>" +
                 "<input id=\"hostName" + i +"\" size=\"20\" disabled></input>" +
                 "<label style=\" width:50px; display: inline-block;\" id=\"userCount" + i +"\"></label>" +
+                "<label style=\" width:50px; display: inline-block;\" id=\"fps" + i +"\"></label>" +
                 "</p>";
             divTag.append(hostIdInput);
             let chatInput = "<p><input type=\"text\" id=\"chat" + i + "\" size=\"90\"/></p>";
@@ -211,9 +216,10 @@
             let ptag2 = $("<p>");
             ptag2.append("Room Id:<input type=\"text\" id=\"roomId" + i +"\" size=\"30\"/>");
             ptag2.append("<button onClick=\"playStream(" + i +",'2')\">播放一多</button>");
-            ptag2.append("<button onClick=\"playStream(" + i +",'')\">播放一一</button>");
-            ptag2.append("<button onClick=\"soundMuted(" + i +")\">静音</button>");
-            ptag2.append("<button onClick=\"play(" + i +")\">暂停</button>");
+            //ptag2.append("<button onClick=\"playStream(" + i +",'')\">播放一一</button>");
+            ptag2.append("<button id=\"soundMuted" + i +"\" onClick=\"soundMuted(" + i +")\">放音</button>");
+            //ptag2.append("<button onClick=\"play(" + i +")\">暂停</button>");
+            ptag2.append("<label style=\" width:50px; display: inline-block;\" id=\"sound" + i +"\">无声</label>");
             divTag.append(ptag2);
 
             td.appendTo(elementToAttach);
@@ -380,7 +386,14 @@
         const remoteStream = await zgs[count].startPlayingStream(streamId);
 
         remoteVideos[count].srcObject = remoteStream;
+        remoteVideos[count].muted = true; //接入默认为静音
         remoteVideos[count].play();
+
+        //重置静音按钮
+        let muteLabel = $("#sound" + count);
+        muteLabel.text("无声");
+        $("#soundMuted"+count).html('放音');
+        muteLabel.css("color", "black");
 
         //记录正在播放的房间roomId对应的index
         roomIndexByRoomId.set(roomID, count);
@@ -407,7 +420,32 @@
         //监控主播状态
         watchStatusSingle(count);
         watchStatusCycle(count);
+
+        //FPS
+        //getFPSSingle(count);
+        //getFPSCycle(count);
+
     }
+
+    function getFPSSingle(count) {
+        let quality = zgs[count].getPlayingStreamQuality(streamIds[count]);
+        console.log("FPS: " + quality.video.videoFPS);
+        console.log("bit rate: " + quality.video.videoBitrate);
+        let fpsLabel = $("#fps" + count);
+        fpsLabel.text(quality.video.videoFPS);
+    }
+
+    function getFPSCycle(count) {
+        if(fpsWatcher[count] != null) {
+            clearInterval(fpsWatcher[count]); //停止原主播监控
+        }
+
+        fpsWatcher[count] = null; //清除原主播watcher
+        fpsWatcher[count] = setInterval(function () {
+            getFPSSingle(count);
+        }, 10 * 1000); //10秒
+    }
+
 
     function getHostName(count) {
         //获取主播名称
@@ -443,10 +481,17 @@
     }
 
     function soundMuted(count) {
+        let muteLabel = $("#sound" + count);
         if (remoteVideos[count].muted) {
             remoteVideos[count].muted = false;
+            muteLabel.text("有声");
+            muteLabel.css("color", "green");
+            $("#soundMuted"+count).html('消音');
         } else {
             remoteVideos[count].muted = true;
+            muteLabel.text("无声");
+            $("#soundMuted"+count).html('放音');
+            muteLabel.css("color", "black");
         }
     }
 
@@ -525,6 +570,7 @@
                     roomID = resultSet[2];
 
                     streamId = "myStreamHost" + roomID.substring(18);
+                    streamIds[count] = streamId;
                     userName = userID;
 
                     document.getElementById("userId" + count).value = userID;
