@@ -4,7 +4,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="./zego/jquery-1.4.2.min.js"></script>
-    <script src="./zego/ZegoExpressWebRTC-2.1.0.js"></script>
+    <script src="./zego/ZegoExpressWebRTC-2.21.0.js"></script>
 </head>
 <body>
 <script language="javascript">
@@ -237,6 +237,10 @@
         $.ajax({
             url: 'http://10.10.10.200:18090/sl/renewCookie',
             type: 'GET',
+            data:
+                {
+                    index: 0
+                },
             success: function(data){
                 if (data != null) {
                     document.getElementById("cookie").value = data.cookies;
@@ -276,7 +280,27 @@
         let retryStateLabel = $("#retryState" + count);
         retryStateLabel.css("color", "red");
         retryStateLabel.text("尝试" + retryCounts[count] + "进行中...");
-        playStream(count, 2);
+
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/checkHostStatus',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+            success: function(data){
+                if(data === "2" || data === "3" || data === "4") {
+                    playStream(count, 2);
+                }
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                //alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
         retryCounts[count]++;
     }
 
@@ -505,7 +529,7 @@
             userID,
             userName
         }, {
-            userUpdate: true,
+            userUpdate: false,
             maxMemberCount: 0
         });
 
