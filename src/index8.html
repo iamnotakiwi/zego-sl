@@ -360,25 +360,25 @@
             }
         });
 
-        $.ajax({
-            url: 'http://10.10.10.200:18090/sl/checkOnlineUserCount',
-            type: 'GET',
-            data:
-                {
-                    hostId: hostId
-                },
-
-            success: function(data){
-                let userCount = data;
-                let userCountLabel = $("#userCount" + count);
-                userCountLabel.text(userCount);
-            },
-            error: function(xmlHttpRequest,textStatus,error){
-                //alert(error);
-                console.log(xmlHttpRequest.status);
-                console.log(textStatus);
-            }
-        });
+        // $.ajax({
+        //     url: 'http://10.10.10.200:18090/sl/checkOnlineUserCount',
+        //     type: 'GET',
+        //     data:
+        //         {
+        //             hostId: hostId
+        //         },
+        //
+        //     success: function(data){
+        //         let userCount = data;
+        //         let userCountLabel = $("#userCount" + count);
+        //         userCountLabel.text(userCount);
+        //     },
+        //     error: function(xmlHttpRequest,textStatus,error){
+        //         //alert(error);
+        //         console.log(xmlHttpRequest.status);
+        //         console.log(textStatus);
+        //     }
+        // });
     }
 
     function sleep (time) {
@@ -443,7 +443,7 @@
 
         //监控主播状态
         watchStatusSingle(count);
-        watchStatusCycle(count);
+        //watchStatusCycle(count); /*20230103 暂时取消状态监控*/
 
         //FPS
         //getFPSSingle(count);
