@@ -89,7 +89,7 @@
             // }
             if (state == 'CONNECTED') {
                 //如果房间播放正常，则清除重复尝试状态
-                if(retryTimers[i] >= 1) {
+                if(retryCounts[i] > 1) {
                     console.log("CLEARED TIMER!!!");
                     clearInterval(retryTimers[i]);
                     $("#retryButton" + count).attr('disabled',false);
@@ -97,6 +97,8 @@
                     retryStateLabel.text("");
                     retryCounts[i] = 1; //重置
                 }
+
+
 
             }
         });
@@ -283,7 +285,7 @@
         //跟踪在被retry连接的主播状态
         //监控主播状态
         watchStatusSingle(count);
-        watchStatusCycle(count);
+        //watchStatusCycle(count);
 
     }
 
