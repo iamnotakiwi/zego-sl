@@ -4,7 +4,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="./zego/jquery-1.4.2.min.js"></script>
-    <script src="./zego/ZegoExpressWebRTC-2.1.0.js"></script>
+    <script src="./zego/ZegoExpressWebRTC-2.21.0.js"></script>
 </head>
 <body>
 <script language="javascript">
@@ -87,6 +87,18 @@
             //         console.log("退出播放时，找不到房间索引:" + roomID);
             //     }
             // }
+            if (state == 'CONNECTED') {
+                //如果房间播放正常，则清除重复尝试状态
+                if(retryTimers[i] >= 1) {
+                    console.log("CLEARED TIMER!!!");
+                    clearInterval(retryTimers[i]);
+                    $("#retryButton" + count).attr('disabled',false);
+                    let retryStateLabel = $("#retryState" + count);
+                    retryStateLabel.text("");
+                    retryCounts[i] = 1; //重置
+                }
+
+            }
         });
     }
 
@@ -122,8 +134,7 @@
         rowCookie.append(
             "        <tr>\n" +
             "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
-            "                <p>Cookies0:<input type=\"text\" id=\"cookie0\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
-            "                <p>Cookies1:<input type=\"text\" id=\"cookie1\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
+            "                <p>Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
             "            </td>\n" +
             "        </tr>");
 
@@ -238,6 +249,10 @@
         $.ajax({
             url: 'http://10.10.10.200:18090/sl/renewCookie',
             type: 'GET',
+            data:
+                {
+                    index: 0
+                },
             success: function(data){
                 if (data != null) {
                     document.getElementById("cookie").value = data.cookies;
@@ -252,32 +267,6 @@
             }
         });
 
-    }
-
-    function reloginCycle(count) {
-        $("#reloginButton" + count).attr('disabled',true);
-        let cookieIndex = 0;
-        reloginSingle(count,cookieIndex);//第一次手动执行
-        retryTimers[count] = setInterval(function () {
-            reloginSingle(count,cookieIndex);
-            cookieIndex++;
-        }, 15 * 1000); //15秒重试
-
-        //获取主播名称
-        getHostName(count);
-
-        //跟踪在被retry连接的主播状态
-        //监控主播状态
-        watchStatusSingle(count);
-        watchStatusCycle(count);
-    }
-
-    function reloginSingle(count, cookieIndex) {
-        let retryStateLabel = $("#retryState" + count);
-        retryStateLabel.css("color", "red");
-        retryStateLabel.text("爆破进入" + retryCounts[count] + "进行中...");
-        playStream(count, 2);
-        retryCounts[count]++;
     }
 
     //重复尝试进入房间
@@ -303,7 +292,27 @@
         let retryStateLabel = $("#retryState" + count);
         retryStateLabel.css("color", "red");
         retryStateLabel.text("尝试" + retryCounts[count] + "进行中...");
-        playStream(count, 2);
+
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/checkHostStatus',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+            success: function(data){
+                if(data === "2" || data === "3" || data === "4") {
+                    playStream(count, 2);
+                }
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                //alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
         retryCounts[count]++;
     }
 
@@ -363,25 +372,25 @@
             }
         });
 
-        $.ajax({
-            url: 'http://10.10.10.200:18090/sl/checkOnlineUserCount',
-            type: 'GET',
-            data:
-                {
-                    hostId: hostId
-                },
-
-            success: function(data){
-                let userCount = data;
-                let userCountLabel = $("#userCount" + count);
-                userCountLabel.text(userCount);
-            },
-            error: function(xmlHttpRequest,textStatus,error){
-                //alert(error);
-                console.log(xmlHttpRequest.status);
-                console.log(textStatus);
-            }
-        });
+        // $.ajax({
+        //     url: 'http://10.10.10.200:18090/sl/checkOnlineUserCount',
+        //     type: 'GET',
+        //     data:
+        //         {
+        //             hostId: hostId
+        //         },
+        //
+        //     success: function(data){
+        //         let userCount = data;
+        //         let userCountLabel = $("#userCount" + count);
+        //         userCountLabel.text(userCount);
+        //     },
+        //     error: function(xmlHttpRequest,textStatus,error){
+        //         //alert(error);
+        //         console.log(xmlHttpRequest.status);
+        //         console.log(textStatus);
+        //     }
+        // });
     }
 
     function sleep (time) {
@@ -446,7 +455,7 @@
 
         //监控主播状态
         watchStatusSingle(count);
-        watchStatusCycle(count);
+        //watchStatusCycle(count); /*20230103 暂时取消状态监控*/
 
         //FPS
         //getFPSSingle(count);
@@ -532,7 +541,7 @@
             userID,
             userName
         }, {
-            userUpdate: true,
+            userUpdate: false,
             maxMemberCount: 0
         });
 
@@ -542,9 +551,9 @@
         mainFun(count);
     }
 
-    function playStream(count, mode, cookieIndex) {
+    function playStream(count, mode) {
         let hostId = document.getElementById("hostId" + count).value;
-        let cookie = document.getElementById("cookie" + cookieIndex % 2).value;
+        let cookie = document.getElementById("cookie").value;
 
         if(cookie == "") {
             alert("请填写Cookie信息！");
