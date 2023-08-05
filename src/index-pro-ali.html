@@ -1,0 +1,651 @@
+<html lang="en-US">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="./zego/jquery-1.4.2.min.js"></script>
+    <script src="./zego/ZegoExpressWebRTC-2.1.0.js"></script>
+</head>
+<body>
+<script language="javascript">
+    let appID = 1683169960;
+    let serverURL = "wss://webliveroom1683169960-api.coolxcloud.com/ws";
+
+    let zgs = new Array(8);
+
+    for(let i = 0; i < 8; i++) {
+        zgs[i] = new ZegoExpressEngine(appID, serverURL);
+        zgs[i].setDebugVerbose(false);
+        zgs[i].setLogConfig({
+            "logLevel": 'disable'
+        });
+
+        zgs[i].on('roomUserUpdate', (roomID, updateType, userList) => {
+            console.log("房间用户变化: " );
+            userList.forEach(user => console.log(updateType + " " + user.userID + ":" + user.userName));
+        });
+
+        zgs[i].on('roomOnlineUserCountUpdate', (roomID,count) => {
+            console.log(roomID + " 房间人数变化: " + count);
+        });
+
+        zgs[i].on('IMRecvBroadcastMessage', (roomID, ZegoMessageInfo) => {
+            let txtJson = JSON.parse(ZegoMessageInfo[0].message,function(key, value) {
+                 if (typeof value === 'string') {
+                     return value.trim();
+                 }
+                 return value;
+             });
+            if (!txtJson.action) {
+                let talkHistory = document.getElementById("chat" + i).value;
+                let newMessage = txtJson.nick + ":" + txtJson.text;
+                let combineMessage = (talkHistory + " " + newMessage).trim();
+                if (combineMessage.length > 55) {
+                    document.getElementById("chat" + i).value = newMessage;
+                }
+                else {
+                    document.getElementById("chat" + i).value = combineMessage;
+                }
+            }
+            else if (txtJson.action=="system") {
+
+            }
+            else if (txtJson.action=="kick") {
+                console.log("被踢出信息获取");
+            }
+            else if (txtJson.action=="please") {
+
+            }
+            else if (txtJson.action=="pleaseOK") {
+
+            }
+        });
+
+        zgs[i].on('roomStreamUpdate', (roomID, updateType, streamList, extendedData) => {
+            // if(extendedData) {
+            //     zgs[0].startPlayingStream(streamId);
+            // }
+        });
+
+        zgs[i].on('roomStateUpdate', (roomID, state, errorCode, extendedData) => {
+            //alert(state);
+            // if (state == 'DISCONNECTED') {
+            //
+            //     let roomIndex = roomIndexByRoomId.get(roomID);
+            //
+            //     if(roomIndex != null) {
+            //         zgs[roomIndex].logoutRoom(roomID);
+            //         remoteVideos[roomIndex].srcObject = null;
+            //         roomIndexByRoomId.delete(roomID); //删除map中已完成播放的房间号
+            //
+            //         //标记已下线
+            //         let connStateLabel = $("#connectState" + roomIndex);
+            //         connStateLabel.css("color", "red");
+            //         connStateLabel.text("已下线");
+            //     }
+            //     else {
+            //         console.log("退出播放时，找不到房间索引:" + roomID);
+            //     }
+            // }
+            if (state == 'CONNECTED') {
+                //如果房间播放正常，则清除重复尝试状态
+                if(retryCounts[i] > 1) {
+                    console.log("CLEARED TIMER!!!");
+                    clearInterval(retryTimers[i]);
+                    $("#retryButton" + count).attr('disabled',false);
+                    let retryStateLabel = $("#retryState" + count);
+                    retryStateLabel.text("");
+                    retryCounts[i] = 1; //重置
+                }
+
+
+
+            }
+        });
+    }
+
+</script>
+
+<script language="javascript">
+
+    let currentPlayingRoomIds = new Array(8);
+    let roomIndexByRoomId = new Map();
+
+    let userID = "";
+    let token = "";
+    let roomID = "";
+    let streamId = "";
+    let userName = "";
+
+    let isLogins = ["0","0","0","0","0","0","0","0"];
+    let playas = ["1","1","1","1","1","1","1","1"];
+    let remoteVideos = new Array(8);
+    let retryTimers = new Array(8);
+
+    //监测主播状态
+    let hostStatusWatcher = new Array(8);
+
+    let retryCounts = [1,1,1,1,1,1,1,1];
+    let streamIds = [null,null,null,null,null,null,null,null];
+
+    let fpsWatcher = new Array(8);
+
+    $(document).ready(function(){
+        //构建播放器（8个）
+        let rowCookie = $("#rowCookie");
+        rowCookie.append(
+            "        <tr>\n" +
+            "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
+            "                <p>Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
+            "            </td>\n" +
+            "        </tr>");
+
+        let row1 = $("#row1");
+        buildVideoTag(0,4,row1);
+        let row2 = $("#row2");
+        buildVideoTag(4,8,row2);
+
+        for(i = 0; i < 8; i++) {
+            let tag = 'video#remoteVideo' + i;
+            remoteVideos[i] = document.querySelector(tag);
+            remoteVideos[i].muted = true;
+        }
+
+        //开始自动获取cookie
+        getCookiesCycle();
+
+    });
+
+    function parseMessage(message) {
+        let txtJson = JSON.parse(message,function(key, value) {
+            if (typeof value === 'string') {
+                return value.trim();
+            }
+            return value;
+        });
+    }
+
+    function buildVideoTag(startIndex, endIndex, elementToAttach) {
+        // <td valign="top" bgcolor="#ffffff" style="padding-bottom: 1em">
+        //     <div className="box-body">
+        //         <div style="background-color: #000000;text-align: center;">
+        //             <p>
+        //                 <!-- onmouseover="mainFun(); this.play();" -->
+        //                 <video id="remoteVideo0" autoPlay playsinline style="width:640px;height:480px;"></video>
+        //             </p>
+        //         </div>
+        //         <p>主播Id:<input type="text" id="hostId0" size="20"/></p>
+        //         <p>User Id:<input type="text" id="userId0" size="20"/>Token:<input type="text" id="token0" size="30"/>
+        //         </p>
+        //         <p>
+        //             Room Id:<input type="text" id="roomId0" size="30"/>
+        //             <button onClick="playStream(0,'2')">播放一多</button>
+        //             <button onClick="playStream(0,'')">播放一一</button>
+        //             <button onClick="sountMuted(0)">静音</button>
+        //             <button onClick="play(0)">暂停</button>
+        //         </p>
+        //     </div>
+        // </td>
+        for(i = startIndex; i < endIndex; i++) {
+            let td = $("<td>", {
+                "valign": "top",
+                "bgcolor":"#ffffff",
+                "style": "padding-bottom: 1em"
+            });
+            let divTag = $("<div>", {
+                "className": "box-body",
+            });
+
+            let videoDiv = $("<div>", {
+                "style": "background-color: #000000;text-align: center;"
+            });
+
+            let pTag = $("<p>");
+
+            let videoTag = $("<video>", {
+                "id": "remoteVideo" + i,
+                "style": "width:640px;height:480px;"
+            });
+
+            td.append(divTag);
+            divTag.append(videoDiv);
+            videoDiv.append(pTag);
+            pTag.append(videoTag);
+
+            let hostIdInput = "<p>" +
+                "主播Id:<input type=\"text\" id=\"hostId" + i + "\" size=\"10\"/><label style=\" width:60px; display: inline-block;\" id=\"connectState" + i +"\"></label>" +
+                "<button id=\"retryButton" + i + "\" onClick=\"retryCycle(" + i + ")\">重复尝试</button>" +
+                "<label style=\" width:120px; display: inline-block;\" id=\"retryState" + i +"\"></label>" +
+                "<input id=\"hostName" + i +"\" size=\"20\" disabled></input>" +
+                "<label style=\" width:50px; display: inline-block;\" id=\"userCount" + i +"\"></label>" +
+                "<label style=\" width:50px; display: inline-block;\" id=\"fps" + i +"\"></label>" +
+                "</p>";
+            divTag.append(hostIdInput);
+            let chatInput = "<p><input type=\"text\" id=\"chat" + i + "\" size=\"90\"/></p>";
+            divTag.append(chatInput);
+
+            let userIdInput = "<p hidden>User Id:<input type=\"text\" id=\"userId" + i + "\" size=\"20\"/>Token:<input type=\"text\" id=\"token" + i + "\" size=\"30\"/></p>";
+            divTag.append(userIdInput);
+
+            let ptag2 = $("<p>");
+            ptag2.append("Room Id:<input type=\"text\" id=\"roomId" + i +"\" size=\"30\"/>");
+            ptag2.append("<button onClick=\"playStream(" + i +",'2')\">播放一多</button>");
+            //ptag2.append("<button onClick=\"playStream(" + i +",'')\">播放一一</button>");
+            ptag2.append("<button id=\"soundMuted" + i +"\" onClick=\"soundMuted(" + i +")\">放音</button>");
+            //ptag2.append("<button onClick=\"play(" + i +")\">暂停</button>");
+            ptag2.append("<label style=\" width:50px; display: inline-block;\" id=\"sound" + i +"\">无声</label>");
+            divTag.append(ptag2);
+
+            td.appendTo(elementToAttach);
+        }
+    }
+
+    function getCookiesCycle() {
+        getCookiesSingle();
+        setInterval(function () {
+            getCookiesSingle();
+        },5 * 60 * 1000); //每10分钟更新一次cookie
+    }
+
+    function getCookiesSingle() {
+        $.ajax({
+            url: 'http://123.57.25.145:8090/sl/renewCookie',
+            type: 'GET',
+            data:
+                {
+                    index: 0
+                },
+            success: function(data){
+                if (data != null) {
+                    document.getElementById("cookie").value = data.cookies;
+                    document.getElementById("lastUpdateTime").innerHTML = data.lastUpdatedTime;
+                }
+
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+    }
+
+    //重复尝试进入房间
+    function retryCycle(count) {
+        $("#retryButton" + count).attr('disabled',true);
+        retrySingle(count);//第一次手动执行
+        retryTimers[count] = setInterval(function () {
+            retrySingle(count);
+        }, 1 * 60 * 1000); //一分钟重试
+
+        //获取主播名称
+        getHostName(count);
+
+        //跟踪在被retry连接的主播状态
+        //监控主播状态
+        watchStatusSingle(count);
+        //watchStatusCycle(count);
+
+    }
+
+    //重试内容
+    function retrySingle(count) {
+        let retryStateLabel = $("#retryState" + count);
+        retryStateLabel.css("color", "red");
+        retryStateLabel.text("尝试" + retryCounts[count] + "进行中...");
+
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            url: 'http://123.57.25.145:8090/sl/checkHostStatus',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+            success: function(data){
+                if(data === "2" || data === "3" || data === "4") {
+                    playStream(count, 2);
+                }
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                //alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+        retryCounts[count]++;
+    }
+
+    //alert("webrtc://tencent.pull.cqdqwx.cn/live/myStreamHostd7f39f21554b89cd?exSecret=&txTime=");
+
+    //定时更新主播状态
+    function watchStatusCycle(count) {
+        if(hostStatusWatcher[count] != null) {
+            clearInterval(hostStatusWatcher[count]); //停止原主播监控
+        }
+
+        hostStatusWatcher[count] = null; //清除原主播watcher
+        hostStatusWatcher[count] = setInterval(function () {
+            watchStatusSingle(count);
+        }, 0.5 * 60 * 1000); //30秒
+
+    }
+
+    //重试内容
+    function watchStatusSingle(count) {
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            url: 'http://123.57.25.145:8090/sl/checkHostStatus',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+
+            success: function(data){
+                let statusCode = data;
+                let color;
+
+                //1-不在线 2-聊天中 3-1对多 4-一对一 5-封包
+                if (statusCode === "1") {
+                    color = '#2E4053'; //dark
+                }
+                else if (statusCode === "2") {
+                    color = '#F7DC6F'; //yellow
+                }
+                else if (statusCode === "3") {
+                    color = '#F7DC6F' //yellow
+                }
+                else if (statusCode === "4") {
+                    color = '#229954' //green
+                }
+                else if (statusCode === "5") {
+                    color = '#EC7063' //red
+                }
+
+                $("#hostName" + count).css({backgroundColor: color});
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                //alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+        // $.ajax({
+        //     url: 'http://123.57.25.145:8090/sl/checkOnlineUserCount',
+        //     type: 'GET',
+        //     data:
+        //         {
+        //             hostId: hostId
+        //         },
+        //
+        //     success: function(data){
+        //         let userCount = data;
+        //         let userCountLabel = $("#userCount" + count);
+        //         userCountLabel.text(userCount);
+        //     },
+        //     error: function(xmlHttpRequest,textStatus,error){
+        //         //alert(error);
+        //         console.log(xmlHttpRequest.status);
+        //         console.log(textStatus);
+        //     }
+        // });
+    }
+
+    function sleep (time) {
+        return new Promise((resolve) => setTimeout(resolve, time));
+    }
+
+    function logout(count) {
+        zgs[count].logoutRoom(currentPlayingRoomIds[count]);
+    }
+
+    async function mainFun(count) {
+        // var message = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId": "112121014" , "nickColor": "#4456c5", "nick": "很痛", "textColor": "green", "text": "進入聊天室","fontSize":"3"}';
+        // zgs[count].sendBroadcastMessage(roomID, message);
+        //
+        // var message2 = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId":"112121014","nickColor":"#4456c5","nick":"很痛","textColor":"green","text":"已連線開始計費","fontSize":"3"}';
+        // sleep(1000).then(() => {
+        //
+        //     zgs[count].sendBroadcastMessage(roomID, message2);
+        //     //(message);
+        //
+        // });
+        //
+        // sleep(5000).then(() => {
+        //     //var message3 = '{"action":"system","public":"1","toCallid":"0","toName":"對象","userId": "112121014" , "nickColor": "#4456c5", "nick": "adobe2", "textColor": "green", "text": "離開聊天室","fontSize":"3"}';
+        //     // var message3 = '{"action":"kick","public":"1","toCallid":"112121014"}';
+        //     // zgs[count].sendBroadcastMessage(roomID, message3);
+        // });
+
+        const remoteStream = await zgs[count].startPlayingStream(streamId);
+
+        remoteVideos[count].srcObject = remoteStream;
+        remoteVideos[count].muted = true; //接入默认为静音
+        remoteVideos[count].play();
+
+        //重置静音按钮
+        let muteLabel = $("#sound" + count);
+        muteLabel.text("无声");
+        $("#soundMuted"+count).html('放音');
+        muteLabel.css("color", "black");
+
+        //记录正在播放的房间roomId对应的index
+        roomIndexByRoomId.set(roomID, count);
+
+        let connStateLabel = $("#connectState" + count);
+        connStateLabel.css("color", "green");
+        connStateLabel.text("正常");
+
+        //清空聊天记录
+        document.getElementById("chat" + count).value = "";
+
+        //如果房间播放正常，则清除重复尝试状态
+        if(retryTimers[count] >= 1) {
+            clearInterval(retryTimers[count]);
+            $("#retryButton" + count).attr('disabled',false);
+            let retryStateLabel = $("#retryState" + count);
+            retryStateLabel.text("");
+            retryCounts[count] = 1; //重置
+        }
+
+        //获取主播名称
+        getHostName(count);
+
+        //监控主播状态
+        watchStatusSingle(count);
+        //watchStatusCycle(count); /*20230103 暂时取消状态监控*/
+
+        //FPS
+        //getFPSSingle(count);
+        //getFPSCycle(count);
+
+    }
+
+    function getFPSSingle(count) {
+        let quality = zgs[count].getPlayingStreamQuality(streamIds[count]);
+        console.log("FPS: " + quality.video.videoFPS);
+        console.log("bit rate: " + quality.video.videoBitrate);
+        let fpsLabel = $("#fps" + count);
+        fpsLabel.text(quality.video.videoFPS);
+    }
+
+    function getFPSCycle(count) {
+        if(fpsWatcher[count] != null) {
+            clearInterval(fpsWatcher[count]); //停止原主播监控
+        }
+
+        fpsWatcher[count] = null; //清除原主播watcher
+        fpsWatcher[count] = setInterval(function () {
+            getFPSSingle(count);
+        }, 10 * 1000); //10秒
+    }
+
+
+    function getHostName(count) {
+        //获取主播名称
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            //url: 'http://localhost:8090/sl/getHostName',
+            url: 'http://123.57.25.145:8090/sl/getHostName',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+
+            success: function(data){
+                document.getElementById("hostName" + count).value = data;
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+    }
+
+    function play(count) {
+        if (playas[count] == "1") {
+            remoteVideos[count].pause();
+            playas[count] = "0";
+        } else {
+            remoteVideos[count].play();
+            playas[count] = "1";
+        }
+    }
+
+    function soundMuted(count) {
+        let muteLabel = $("#sound" + count);
+        if (remoteVideos[count].muted) {
+            remoteVideos[count].muted = false;
+            muteLabel.text("有声");
+            muteLabel.css("color", "green");
+            $("#soundMuted"+count).html('消音');
+        } else {
+            remoteVideos[count].muted = true;
+            muteLabel.text("无声");
+            $("#soundMuted"+count).html('放音');
+            muteLabel.css("color", "black");
+        }
+    }
+
+    async function startPlaying(count) {
+        if (isLogins[count] === "1") {
+            zgs[count].logoutRoom(currentPlayingRoomIds[count]);
+            isLogins[count] = "0";
+        }
+
+        let result = await zgs[count].loginRoom(roomID, token, {
+            userID,
+            userName
+        }, {
+            userUpdate: false,
+            maxMemberCount: 0
+        });
+
+        currentPlayingRoomIds[count] = roomID;
+        isLogins[count] = "1";
+
+        mainFun(count);
+    }
+
+    function playStream(count, mode) {
+        let hostId = document.getElementById("hostId" + count).value;
+        let cookie = document.getElementById("cookie").value;
+
+        if(cookie == "") {
+            alert("请填写Cookie信息！");
+        }
+
+        //清除当前状态
+        let connStateLabel = $("#connectState" + count);
+        connStateLabel.text("");
+
+        let code = '';
+
+        $.ajax({
+            //url: 'http://localhost:8090/sl/getLoginInfo',
+            url: 'http://123.57.25.145:8090/sl/getLoginInfo',
+            type: 'GET',
+            data:
+                {   hostId: hostId,
+                    clientCookies: cookie,
+                    mode: mode
+                },
+
+            success: function(data){
+                if (data.statusCode == "1") {
+                    let connStateLabel = $("#connectState" + count);
+                    connStateLabel.text("忙线");
+                }
+                else if (data.statusCode == "2") {
+                    let connStateLabel = $("#connectState" + count);
+                    connStateLabel.text("不在线");
+                }
+                else if (data.statusCode == "4") {
+                    let connStateLabel = $("#connectState" + count);
+                    connStateLabel.text("太频繁");
+                }
+                else if (data.statusCode == "5") {
+                    let connStateLabel = $("#connectState" + count);
+                    connStateLabel.text("换模式");
+                    console.log("替换为一对一模式进入房间！")
+                    playStream(count, '');
+                }
+                else if (data.statusCode == "9") {
+                    let connStateLabel = $("#connectState" + count);
+                    connStateLabel.text("异常");
+                }
+                else {
+                    let resultSet = data.loginInfo.split(',');
+
+                    userID = resultSet[0];
+                    token = resultSet[1];
+                    roomID = resultSet[2];
+
+                    streamId = "myStreamHost" + roomID.substring(18);
+                    streamIds[count] = streamId;
+                    userName = userID;
+
+                    document.getElementById("userId" + count).value = userID;
+                    document.getElementById("token" + count).value = token;
+                    document.getElementById("roomId" + count).value = roomID;
+
+                    startPlaying(count, mode);
+                }
+
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                console.log(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+    }
+
+</script>
+
+
+<section class="banner">
+    <div class="container">
+        <section class="footer_banner" id="contact">
+            <table width="100%" border="0" cellpadding="0" cellspacing="0">
+                <tbody>
+                <div id="row1"></div>
+                <div id="row2"></div>
+                <div id="rowCookie"></div>
+                </tbody>
+            </table>
+        </section>
+
+    </div>
+</section>
+
+
+</body>
+</html>
