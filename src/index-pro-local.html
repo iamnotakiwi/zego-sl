@@ -251,10 +251,6 @@
         $.ajax({
             url: 'http://10.10.10.200:18090/sl/renewCookie',
             type: 'GET',
-            data:
-                {
-                    index: 0
-                },
             success: function(data){
                 if (data != null) {
                     document.getElementById("cookie").value = data.cookies;
