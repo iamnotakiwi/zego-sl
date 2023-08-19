@@ -6,7 +6,7 @@
     <script src="./zego/jquery-1.4.2.min.js"></script>
     <script src="./zego/ZegoExpressWebRTC-2.1.0.js"></script>
 </head>
-<body>
+<body style="overflow-y: hidden">
 <script language="javascript">
     let appID = 1683169960;
     let serverURL = "wss://webliveroom1683169960-api.coolxcloud.com/ws";
@@ -204,7 +204,7 @@
 
             let videoTag = $("<video>", {
                 "id": "remoteVideo" + i,
-                "style": "width:640px;height:480px;"
+                "style": "width:638px;height:480px;"
             });
 
             td.append(divTag);
