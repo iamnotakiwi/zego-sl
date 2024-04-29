@@ -20,14 +20,14 @@
             "logLevel": 'disable'
         });
 
-        zgs[i].on('roomUserUpdate', (roomID, updateType, userList) => {
-            console.log("房间用户变化: " );
-            userList.forEach(user => console.log(updateType + " " + user.userID + ":" + user.userName));
-        });
+        // zgs[i].on('roomUserUpdate', (roomID, updateType, userList) => {
+        //     console.log("房间用户变化: " );
+        //     userList.forEach(user => console.log(updateType + " " + user.userID + ":" + user.userName));
+        // });
 
-        zgs[i].on('roomOnlineUserCountUpdate', (roomID,count) => {
-            console.log(roomID + " 房间人数变化: " + count);
-        });
+        // zgs[i].on('roomOnlineUserCountUpdate', (roomID,count) => {
+        //     console.log(roomID + " 房间人数变化: " + count);
+        // });
 
         zgs[i].on('IMRecvBroadcastMessage', (roomID, ZegoMessageInfo) => {
             let txtJson = JSON.parse(ZegoMessageInfo[0].message,function(key, value) {
@@ -138,6 +138,9 @@
             "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
             "                <p>Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
             "            </td>\n" +
+            "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
+            "                <p>快捷主播:<input type=\"text\" id=\"expressHosts\" size=\"60\" /><label style=\" width:200px; display: inline-block;\" id=\"expressHostsLabel\"></label><button id=\"expressHostsButton\" onClick=\"updateExpressHosts()\">更新快捷主播</button></p>\n" +
+            "            </td>\n" +
             "        </tr>");
 
         let row1 = $("#row1");
@@ -220,7 +223,8 @@
                 "<label style=\" width:50px; display: inline-block;\" id=\"sound" + i +"\">无声</label>" +
                 "<label style=\" width:80px; display: inline-block;\" id=\"retryState" + i +"\"></label>" +
                 "<input id=\"hostName" + i +"\" size=\"15\" disabled></input>" +
-                "<button id=\"boostButton" + i + "\" onClick=\"boostCycle(" + i + ")\">+++</button>" +
+                "<button id=\"boostButton" + i + "\" onClick=\"boostCycle(" + i + ")\">+</button>" +
+                "<button id=\"exitButton" + i + "\" onClick=\"exitShow(" + i + ")\">-</button>"
                 /**
                 "<label style=\" width:50px; display: inline-block;\" id=\"userCount" + i +"\"></label>" +
                 "<label style=\" width:50px; display: inline-block;\" id=\"fps" + i +"\"></label>" +
@@ -244,6 +248,27 @@
 
             td.appendTo(elementToAttach);
         }
+    }
+
+    function updateExpressHosts() {
+        document.getElementById("expressHostsLabel").innerHTML = "";
+        let expHosts = document.getElementById("expressHosts").value;
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/setExpressHosts',
+            type: 'GET',
+            data:
+                {
+                    expressHosts: expHosts
+                },
+            success: function(data){
+                document.getElementById("expressHostsLabel").innerHTML = expHosts;
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                alert(error);
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
     }
 
     function getCookiesCycle() {
@@ -289,6 +314,29 @@
         watchStatusSingle(count);
         //watchStatusCycle(count);
 
+    }
+
+    function exitShow(count) {
+        console.log("logout: " + count)
+        //zgs[count].stopPlayingStream(streamIds[count]);
+
+        let hostId = document.getElementById("hostId" + count).value;
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/exit',
+            type: 'GET',
+            data:
+                {
+                    hostId: hostId
+                },
+
+            success: function(data){
+
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
     }
 
         //重复尝试进入房间
