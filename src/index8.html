@@ -87,6 +87,55 @@
             //         console.log("退出播放时，找不到房间索引:" + roomID);
             //     }
             // }
+
+            if (state == 'CONNECTED') {
+                //如果房间播放正常，则清除重复尝试状态
+                if(retryCounts[i] > 1) {
+                    console.log("CLEARED TIMER!!!");
+                    clearInterval(retryTimers[i]);
+                    $("#retryButton" + count).attr('disabled',false);
+                    let retryStateLabel = $("#retryState" + count);
+                    retryStateLabel.text("");
+                    retryCounts[i] = 1; //重置
+                }
+
+                getHostName(i);
+                sleep(3000).then(() => {
+
+                    let hostNameFull = document.getElementById("hostName" + i).value;
+                    let hostName = hostNameFull.substring(hostNameFull.indexOf(" ")+1);
+                    console.log(hostName);
+                    $.ajax({
+                        url: 'http://localhost:8090/sl/insertOnlineUser',
+                        //url: 'http://10.10.10.200:18090/sl/insertOnlineUser',
+                        type: 'GET',
+                        data:
+                            {
+                                hostId: document.getElementById("hostId" + i).value,
+                                showName: hostName,
+                                nickname: "下面長鼻子",
+                                message: "(showlive)進入聊天室",
+                                clientCookies: document.getElementById("cookie").value
+                            },
+                        success: function(data){
+                            console.log("成功！！！！！！！");
+                            sleep(2000).then(() => {
+                                // AjaxUpdateStatus();
+                                // window.setInterval(AjaxUpdateStatus, 3000);
+                                // mainFun();
+                                // $('#loadingaaa').hide();
+                                mainFun(i);
+                            });
+                        },
+                        error: function(xmlHttpRequest,textStatus,error){
+                            //alert(error);
+                            console.log(xmlHttpRequest.status);
+                            console.log(textStatus);
+                        }
+                    });
+                });
+
+            }
         });
     }
 
@@ -271,7 +320,7 @@
         //跟踪在被retry连接的主播状态
         //监控主播状态
         watchStatusSingle(count);
-        watchStatusCycle(count);
+        //watchStatusCycle(count);
 
     }
 
@@ -407,7 +456,9 @@
         //     // zgs[count].sendBroadcastMessage(roomID, message3);
         // });
 
+        console.log("I AM IN" + count);
         const remoteStream = await zgs[count].startPlayingStream(streamId);
+        console.log("GOT REMOTE STREAM");
 
         remoteVideos[count].srcObject = remoteStream;
         remoteVideos[count].muted = true; //接入默认为静音
@@ -439,7 +490,7 @@
         }
 
         //获取主播名称
-        getHostName(count);
+        //getHostName(count);
 
         //监控主播状态
         watchStatusSingle(count);
@@ -529,14 +580,14 @@
             userID,
             userName
         }, {
-            userUpdate: false,
+            userUpdate: true,
             maxMemberCount: 0
         });
 
         currentPlayingRoomIds[count] = roomID;
         isLogins[count] = "1";
 
-        mainFun(count);
+        //mainFun(count);
     }
 
     function playStream(count, mode) {
