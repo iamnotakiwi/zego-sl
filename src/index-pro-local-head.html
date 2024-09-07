@@ -65,6 +65,20 @@
                     messageBufferList[i] += ",";
                 }
                 messageBufferList[i] += JSON.stringify(chatText);
+                history
+
+                if(txtJson.gift=="1") {
+                    saveHostEvent(
+                        recordHistoryIDTrackers[i],
+                        document.getElementById("hostId" + i).value,
+                        document.getElementById("hostName" + i).value,
+                        "gift",
+                        txtJson.text,
+                        txtJson.nick,
+                        txtJson.toName,
+                        txtJson.userId,
+                        txtJson.toCallid);
+                }
             }
             else if (txtJson.action=="system") {
 
@@ -73,10 +87,26 @@
                 console.log("被踢出信息获取");
             }
             else if (txtJson.action=="please") {
-
+                saveHostEvent(recordHistoryIDTrackers[i],
+                    document.getElementById("hostId" + i).value,
+                    document.getElementById("hostName" + i).value,
+                    txtJson.action,
+                    txtJson.text,
+                    txtJson.nick,
+                    txtJson.toName,
+                    txtJson.callid,
+                    txtJson.toCallid);
             }
             else if (txtJson.action=="pleaseOK") {
-
+                saveHostEvent(recordHistoryIDTrackers[i],
+                    document.getElementById("hostId" + i).value,
+                    document.getElementById("hostName" + i).value,
+                    txtJson.action,
+                    txtJson.text,
+                    txtJson.nick,
+                    txtJson.toName,
+                    txtJson.userId,
+                    txtJson.toCallid);
             }
         });
 
@@ -195,6 +225,41 @@
         };
     }
 
+    function saveHostEvent(recordHistoryId,
+                            hostId,
+                            hostName,
+                            action,
+                            text,
+                            senderName,
+                            receiverName,
+                            senderId,
+                            receiverId) {
+        $.ajax({
+            url: 'http://10.10.10.200:18090/sl/saveHostEvent',
+            type: 'POST',
+            data:
+                {
+                    recordHistoryId: recordHistoryId,
+                    hostId: hostId,
+                    hostName: hostName,
+                    action: action,
+                    text: text,
+                    senderName: senderName,
+                    receiverName: receiverName,
+                    senderId: senderId,
+                    receiverId: receiverId
+
+                },
+            success: function(data) {
+            },
+            error: function(xmlHttpRequest,textStatus,error){
+                console.log(xmlHttpRequest.status);
+                console.log(textStatus);
+            }
+        });
+
+    }
+
     function parseMessage(message) {
         let txtJson = JSON.parse(message,function(key, value) {
             if (typeof value === 'string') {
@@ -219,7 +284,6 @@
                 document.getElementById("chatHistoryTime" + count).innerHTML = moment().format('YYYY-MM-DD HH:mm:ss');
             },
             error: function(xmlHttpRequest,textStatus,error){
-                alert(error);
                 console.log(xmlHttpRequest.status);
                 console.log(textStatus);
             }
