@@ -81,7 +81,24 @@
                 }
             }
             else if (txtJson.action=="system") {
-
+                if(isOneToOne[i] && txtJson.text === '離開聊天室') {
+                    $.ajax({
+                        url: 'http://10.10.10.200:18090/sl/privateChatFinished',
+                        type: 'GET',
+                        data:
+                            {
+                                id: privateChatIDTrackers[i]
+                            },
+                        success: function(data){
+                            console.log("private chat " + i + "finished!");
+                        },
+                        error: function(xmlHttpRequest,textStatus,error){
+                            alert(error);
+                            console.log(xmlHttpRequest.status);
+                            console.log(textStatus);
+                        }
+                    });
+                }
             }
             else if (txtJson.action=="kick") {
                 console.log("被踢出信息获取");
@@ -96,6 +113,16 @@
                     txtJson.toName,
                     txtJson.callid,
                     txtJson.toCallid);
+
+                let hn = document.getElementById("hostName" + i).value;
+                if(!hn.includes(txtJson.nick)) {
+                    oneToOneGuestNames[i] = txtJson.nick; //会员发起的1对1，储存会员NAME
+                    oneToOneGuestIds[i] = txtJson.callid; //会员发起的1对1，储存会员ID
+                    console.log("会员发起一对一: " + oneToOneGuestNames[i]);
+                }
+                else {//主播发起的1对1
+                    oneToOneGuestIds[i] = txtJson.toCallid; //主播发起的1对1，存储会员ID（接收方）
+                }
             }
             else if (txtJson.action=="pleaseOK") {
                 saveHostEvent(recordHistoryIDTrackers[i],
@@ -107,6 +134,40 @@
                     txtJson.toName,
                     txtJson.userId,
                     txtJson.toCallid);
+
+                let hn1 = document.getElementById("hostName" + i).value;
+                if(!hn1.includes(txtJson.nick)) {
+                    oneToOneGuestNames[i] = txtJson.nick; //主播发起的1对1，会员接受，储存会员NAME
+                    console.log("主播发起一对一: " + oneToOneGuestNames[i]);
+                }
+
+                isOneToOne[i] = true; //1对1开始
+                console.log("确认是会员发起的: " + hn1.includes(txtJson.nick));
+
+                $.ajax({
+                    url: 'http://10.10.10.200:18090/sl/savePrivateChatEvent',
+                    type: 'POST',
+                    data:
+                        {
+                            recordHistoryId: recordHistoryIDTrackers[i],
+                            hostId: document.getElementById("hostId" + i).value,
+                            hostName: document.getElementById("hostName" + i).value,
+                            guestId: oneToOneGuestIds[i],
+                            guestName: oneToOneGuestNames[i]
+
+                        },
+                    success: function(data) {
+                        privateChatIDTrackers[i] = data
+                        //清空缓存1对1信息
+                        oneToOneGuestNames[i] = '';
+                        oneToOneGuestIds[i] = '';
+                    },
+                    error: function(xmlHttpRequest,textStatus,error){
+                        console.log(xmlHttpRequest.status);
+                        console.log(textStatus);
+                    }
+                });
+
             }
         });
 
@@ -185,6 +246,10 @@
     //聊天记录buffer
     let messageBufferList = ["","","","","","","",""];
     let recordHistoryIDTrackers = [-1,-1,-1,-1,-1,-1,-1,-1];
+    let isOneToOne = [false, false, false, false, false, false, false, false];
+    let oneToOneGuestNames = ["","","","","","","",""];
+    let oneToOneGuestIds = ["","","","","","","",""];
+    let privateChatIDTrackers = [-1,-1,-1,-1,-1,-1,-1,-1];
 
     $(document).ready(function(){
         //构建播放器（8个）
@@ -659,6 +724,11 @@
             clearInterval(chatHistoryTimers[count]);
         }
 
+        isOneToOne[count] = false;
+        oneToOneGuestNames[count] = "";
+        oneToOneGuestIds[count] = "";
+        privateChatIDTrackers[count] = -1;
+
         //获取主播名称
         getHostName(count);
 
@@ -693,7 +763,7 @@
                     console.log("interval " + count + " started");
                     chatHistoryTimers[count] = setInterval(function () {
                         pushChatBuffertoDB(chatId, count);
-                    }, 30 * 60 * 1000); //30分钟
+                    }, 15 * 60 * 1000); //15分钟
                 },
                 error: function(xmlHttpRequest,textStatus,error){
                     alert(error);
