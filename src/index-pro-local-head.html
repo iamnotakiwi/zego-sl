@@ -257,7 +257,7 @@
         rowCookie.append(
             "        <tr>\n" +
             "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
-            "                <p>Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
+            "                <p>用户名:<input type=\"text\" id=\"userId\" size=\"30\" />密码:<input type=\"text\" id=\"password\" size=\"30\" />Cookies:<input type=\"text\" id=\"cookie\" size=\"60\" />Cookie最后更新时间: <label style=\" width:200px; display: inline-block;\" id=\"lastUpdateTime\"></label><button id=\"renewCookieButton\" onClick=\"getCookiesSingle()\">更新Cookie</button></p>\n" +
             "            </td>\n" +
             "            <td valign=\"top\" bgcolor=\"#ffffff\" style=\"padding-bottom: 0.7em\">\n" +
             "                <p>快捷主播:<input type=\"text\" id=\"expressHosts\" size=\"60\" /><label style=\" width:200px; display: inline-block;\" id=\"expressHostsLabel\"></label><button id=\"expressHostsButton\" onClick=\"updateExpressHosts()\">更新快捷主播</button></p>\n" +
@@ -274,6 +274,10 @@
             remoteVideos[i] = document.querySelector(tag);
             remoteVideos[i].muted = true;
         }
+
+        //初始化
+        document.getElementById("userId").value = "littleduck";
+        document.getElementById("password").value = "d5cdaa4efbfaf3bc93a90a73b47854be";
 
         //开始自动获取cookie
         getCookiesCycle();
@@ -520,13 +524,18 @@
         let hostId = document.getElementById("hostId" + count).value;
         let cookie = document.getElementById("cookie").value;
 
+        let userId = document.getElementById("userId").value;
+        let pass = document.getElementById("password").value;
+
         $.ajax({
             url: 'http://10.10.10.200:18090/sl/exit',
             type: 'GET',
             data:
                 {
                     hostId: hostId,
-                    clientCookies: cookie
+                    clientCookies: cookie,
+                    userId: userId,
+                    password: pass
                 },
 
             success: function(data){
